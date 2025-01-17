@@ -1,3 +1,50 @@
+const aiAgentMapColumn = window.aiAgentMapColumnColumn = {
+  1: 'optionGPT',
+  2: 'optionGPT',
+  3: 'optionGPT',
+  4: 'optionGPT',
+}
+
+const aiAgentFn = window.aiAgentFn = {
+  optionGPT: async (cell) => {
+    console.log('GPT')
+    const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+    const range = sheet.getRange(cell.row, cell.column);
+    const cellText = range.getValue();
+
+    const firstRowText = sheet.getRange(0, cell.column);
+    const question = `${firstRowText}, ${cellText}`;
+    // const result = await univerAPI.runOnServer("agent", "gpt", question);
+    const result = 'question' + question;
+    console.log(result);
+    return {row: cell.row, col: cell.column, result} ;
+  }
+}
+
+window.initData = function() {
+  const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+  let range = sheet.getRange("A2");
+  range.setValue("Apple");
+  range = sheet.getRange("A3");
+  range.setValue("Google");
+  range = sheet.getRange("A4");
+  range.setValue("Microsoft");
+  range = sheet.getRange("A5");
+  range.setValue("Meta");
+
+  range = sheet.getRange("B1");
+  range.setValue("Who is CEO");
+
+  range = sheet.getRange("C1");
+  range.setValue("Foundation year");
+
+  range = sheet.getRange("D1");
+  range.setValue("Income of 2024");
+
+  range = sheet.getRange("E1");
+  range.setValue("Profit of 2024");
+}
+
 window.registerAIButton = function () {
   const AIButton = () => {
     const divStyle = {
@@ -24,8 +71,30 @@ window.registerAIButton = function () {
         boxShadow: "0 10px 20px rgba(0, 201, 255, 0.3)",
       },
     };
-    const clickHandler = () => {
-      console.warn("click");
+    const clickHandler = async () => {
+
+      const reqs = [];
+      const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+      const range = univerAPI.getActiveWorkbook().getActiveSheet().getActiveRange();
+      let {startRow, startColumn, endRow, endColumn} = range._range;
+      for (let row = startRow; row <= endRow; row++) {
+        for (let column = startColumn; column <= endColumn; column++) {
+            // console.log(matrix[row][column]); // 打印当前元素
+            const aiFn = aiAgentFn[aiAgentMapColumn[column]];
+            if (aiFn) {
+              reqs.push(aiFn({row, column}));
+            }
+        }
+      }
+      try {
+        // 等待所有请求完成
+        const results = await Promise.all(reqs);
+        console.log('所有请求的结果:', results);
+        alert('所有请求已完成！');
+    } catch (error) {
+        console.error('请求出错:', error);
+    }
+
     };
     return (
       <button type="button" style={divStyle} onClick={clickHandler}>
@@ -57,8 +126,11 @@ window.registerHeaderAgent = function () {
   console.log('select', Select);
   console.log('Option', Option);
 
-  const AIAgentSelect = () => {
+  const AIAgentSelect = (props) => {
+    console.log('select props', props)
+    const column = props.column;
     const handleChange = (value) => {
+      aiAgentMapColumn[column] = value;
       console.log("Selected:", value);
     };
 
@@ -71,6 +143,7 @@ window.registerHeaderAgent = function () {
         <Option value="optionGPT">GPT</Option>
         <Option value="optionSearch">Search</Option>
         <Option value="optionRead">Read</Option>
+        <Option value="optionFinance">Finance</Option>
       </Select>
     );
   };
@@ -112,7 +185,8 @@ window.initSelectionEnd = function () {
   window.btnId;
   window.btnDispose;
   univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p) => {
-    console.log(p);
+    console.log('select end', p.selections);
+    if(!p.selections[0]) return;
     const endRow = p.selections[0].endRow;
     const endCol = p.selections[0].endColumn;
     const { id, dispose } = newAIButton();
@@ -128,29 +202,13 @@ window.initSelectionEnd = function () {
 
 window.initColumnAgent = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-  const rsWeb = sheet.addFloatDomToColumnHeader(
-    3,
-    {
-      allowTransform: false,
-      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
-      props: {
-        a: 1,
-      },
-      data: {
-        aa: "128",
-      },
-    },
-    { width: 100, height: 40, x: 0, y: 0 },
-    "ai-web" // dom id
-  );
-
   const rsGPT = sheet.addFloatDomToColumnHeader(
     2,
     {
       allowTransform: false,
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
       props: {
-        a: 1,
+        column: 3,
       },
       data: {
         aa: "128",
@@ -159,10 +217,27 @@ window.initColumnAgent = function () {
     { width: 100, height: 40, x: 0, y: 0 },
     "ai-gpt" // dom id
   );
+
+  const rsWeb = sheet.addFloatDomToColumnHeader(
+    3,
+    {
+      allowTransform: false,
+      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
+      props: {
+        column: 2,
+      },
+      data: {
+        aa: "128",
+      },
+    },
+    { width: 100, height: 40, x: 0, y: 0 },
+    "ai-web" // dom id
+  );
 };
 
 function onOpen() {
   setTimeout(() => {
+    initData();
     registerAIButton();
     registerHeaderAgent();
     initSelectionEnd();
