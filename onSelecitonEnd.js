@@ -5,20 +5,59 @@ const aiAgentMapColumn = window.aiAgentMapColumnColumn = {
   4: 'optionGPT',
 }
 
-const aiAgentFn = window.aiAgentFn = {
+/**
+ * @param {row, column} cell
+ */
+window.getAIPromptByCell = function (cell) {
+  const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+
+  const firstColCell = sheet.getRange(cell.row, 0);
+  const firstColCellText = firstColCell.getValue();
+  const firstRowCell = sheet.getRange(0, cell.column);
+  const firstRowText = firstRowCell.getValue();
+  const prompt = `${firstRowText} of ${firstColCellText}`;
+  console.log('prompt cell', cell.row, cell.column)
+  console.log('prompt::: ' + prompt + ' :::');
+  return { prompt };
+}
+
+const aiAgentFnMap = window.aiAgentFnMap = {
   optionGPT: async (cell) => {
-    console.log('GPT')
+    const {prompt} = getAIPromptByCell(cell);
+    const serverResp = await univerAPI.runOnServer("agent", "gpt", prompt);
+    console.log(serverResp.result); // a string: {"result":"1998"}
+    try{
+      serverResp.resultObj = JSON.parse(serverResp.result);
+    }catch(e) {
+      console.error('GPT req err', e);
+      serverResp.resultObj = {result: 'Error'}
+    }
+
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
-    const cellText = range.getValue();
+    range.setValue(serverResp.resultObj.result);
 
-    const firstRowText = sheet.getRange(0, cell.column);
-    const question = `${firstRowText}, ${cellText}`;
-    // const result = await univerAPI.runOnServer("agent", "gpt", question);
-    const result = 'question' + question;
-    console.log(result);
-    return {row: cell.row, col: cell.column, result} ;
-  }
+    return {row: cell.row, col: cell.column, result: serverResp.resultObj} ;
+  },
+
+  optionSearch: async (cell) => {
+    const {prompt} = getAIPromptByCell(cell);
+    const serverResp = await univerAPI.runOnServer("agent", "web_search", prompt, "duckduckgo");
+    console.log(serverResp.result); // a string: {"result":"1998"}
+    try{
+      serverResp.resultObj = JSON.parse(serverResp.result);
+    }catch(e) {
+      console.error('Search req err', e);
+      serverResp.resultObj = {result: 'Error'}
+    }
+
+    const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+    const range = sheet.getRange(cell.row, cell.column);
+    range.setValue(serverResp.resultObj.result);
+
+    return {row: cell.row, col: cell.column, result: serverResp.resultObj} ;
+  },
+
 }
 
 window.initData = function() {
@@ -39,10 +78,10 @@ window.initData = function() {
   range.setValue("Foundation year");
 
   range = sheet.getRange("D1");
-  range.setValue("Income of 2024");
+  range.setValue("Income of 2022");
 
   range = sheet.getRange("E1");
-  range.setValue("Profit of 2024");
+  range.setValue("Profit of 2022");
 }
 
 window.registerAIButton = function () {
@@ -80,7 +119,7 @@ window.registerAIButton = function () {
       for (let row = startRow; row <= endRow; row++) {
         for (let column = startColumn; column <= endColumn; column++) {
             // console.log(matrix[row][column]); // 打印当前元素
-            const aiFn = aiAgentFn[aiAgentMapColumn[column]];
+            const aiFn = aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
             if (aiFn) {
               reqs.push(aiFn({row, column}));
             }
@@ -123,22 +162,37 @@ window.registerAIButton = function () {
 window.registerHeaderAgent = function () {
   const Option = univerAPI.UI.Select.Option;
   const Select = univerAPI.UI.Select;
-  console.log('select', Select);
-  console.log('Option', Option);
+  const useState = univerAPI.UI.React.useState;
+  // console.log('select', Select);
+  // console.log('Option', Option);
 
   const AIAgentSelect = (props) => {
     console.log('select props', props)
-    const column = props.column;
+    // const column = props.column ||;
+    const column = props.data.column;
+    const defaultOption = props.data.defaultOption || 'optionGPT';
+    console.log('default OPT', column, defaultOption);
+    const [selectedValue, setSelectedValue] = useState(defaultOption); // 初始默认值
+
+
     const handleChange = (value) => {
-      aiAgentMapColumn[column] = value;
+      // aiAgentMapColumn[column] = value;
+      setSelectedValue(value);
       console.log("Selected:", value);
     };
 
     return (
       <Select
-        defaultValue="optionGPT" // 默认值设置为第一个选项的值
+        value={selectedValue}
         style={{ width: 70 }}
+        dropdownStyle={{ width: 120 }}
         onChange={handleChange}
+        onSelect={handleChange}
+        dropdownRender={menu => (
+          <div style={{ zIndex: 65530 }}>
+              {menu}
+          </div>
+      )}
       >
         <Option value="optionGPT">GPT</Option>
         <Option value="optionSearch">Search</Option>
@@ -202,24 +256,23 @@ window.initSelectionEnd = function () {
 
 window.initColumnAgent = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-  const rsGPT = sheet.addFloatDomToColumnHeader(
-    2,
+  const rsGPT1 = sheet.addFloatDomToColumnHeader(
+    1,
     {
       allowTransform: false,
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
       props: {
-        column: 3,
+        column: 1,
       },
       data: {
-        aa: "128",
+        column: 1,
       },
     },
     { width: 100, height: 40, x: 0, y: 0 },
     "ai-gpt" // dom id
   );
-
-  const rsWeb = sheet.addFloatDomToColumnHeader(
-    3,
+  const rsGPT2 = sheet.addFloatDomToColumnHeader(
+    2,
     {
       allowTransform: false,
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
@@ -227,12 +280,46 @@ window.initColumnAgent = function () {
         column: 2,
       },
       data: {
-        aa: "128",
+        column: 2,
       },
     },
     { width: 100, height: 40, x: 0, y: 0 },
-    "ai-web" // dom id
+    "ai-select2" // dom id
   );
+
+  const select3 = sheet.addFloatDomToColumnHeader(
+    3,
+    {
+      allowTransform: false,
+      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
+      data: {
+        column: 3,
+      },
+      props: {
+        column: 3,
+      },
+    },
+    { width: 100, height: 40, x: 0, y: 0 },
+    "ai-select3" // dom id
+  );
+
+  const select4 = sheet.addFloatDomToColumnHeader(
+    4,
+    {
+      allowTransform: false,
+      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
+      data: {
+        defaultOption: "optionSearch",
+        column: 4,
+      },
+      props: {
+        defaultOption: "optionSearch",
+        column: 4,
+      },
+    },
+    { width: 100, height: 40, x: 0, y: 0 },
+    "ai-select4" // dom id
+  )
 };
 
 function onOpen() {
@@ -242,5 +329,5 @@ function onOpen() {
     registerHeaderAgent();
     initSelectionEnd();
     initColumnAgent();
-  }, 2000)
+  }, 1000)
 }
