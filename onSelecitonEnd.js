@@ -1,4 +1,4 @@
-const aiAgentMapColumn = (window.aiAgentMapColumnColumn = {
+const aiAgentMapColumn = (window.aiAgentMapColumn = {
   1: "optionGPT",
   2: "optionGPT",
   3: "optionSearch",
@@ -29,7 +29,7 @@ window.initData = function () {
   range.setValue("Profit of 2022");
 
   for(let i=0; i < 10; i++) {
-    sheet.setColumnWidth(i, 110);
+    sheet.setColumnWidth(i, 130);
   }
   sheet.setRowHeight(0, 50);
 };
@@ -59,48 +59,60 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   },
   optionGPT: async (cell) => {
     const { prompt } = getAIPromptByCell(cell);
-    const serverResp = await univerAPI.runOnServer("agent", "gpt", prompt);
-    console.log("serverGPT.result:::", serverResp.result, "!!!!"); // a string: {"result":"1998"}
-    if (serverResp.result[0] === "{") {
+    const serverRespStr = await univerAPI.runOnServer("agent", "gpt", prompt);
+    console.log("serverGPT:::", serverRespStr, "!!!!"); // a string: {"result":"1998"}
+
+    let serverResp = {};
+    if (serverRespStr[0] === "{") {
       try {
-        serverResp.resultObj = JSON.parse(serverResp.result);
+        serverResp = JSON.parse(serverRespStr);
       } catch (e) {
         console.error("GPT req err", e);
-        serverResp.resultObj = { result: "Error" };
+        serverResp = { result: "Error" };
       }
     } else {
-      serverResp.resultObj = { result: serverResp.result };
+      serverResp = { result: serverRespStr };
     }
 
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
-    range.setValue(serverResp.resultObj.result);
+    range.setValue(serverResp.result);
 
-    return { row: cell.row, col: cell.column, result: serverResp.resultObj };
+    return { row: cell.row, col: cell.column, result: serverResp };
   },
 
   optionSearch: async (cell) => {
     const { prompt } = getAIPromptByCell(cell);
-    const serverResp = await univerAPI.runOnServer(
+    const serverRespStr = await univerAPI.runOnServer(
       "agent",
       "web_search",
       prompt,
       "duckduckgo"
     );
-    console.log("optionSearch.result:::", serverResp.result, "!!!"); // a string: {"result":"1998"}
-    try {
-      serverResp.resultObj = JSON.parse(serverResp.result);
-    } catch (e) {
-      console.error("Search req err", e);
-      serverResp.resultObj = { result: "Error" };
+    console.log("optionSearch.result:::", serverRespStr, "!!!"); // a string: {"result":"1998"}
+
+    let serverResp = {};
+    if (serverRespStr[0] === "{") {
+      try {
+        serverResp = JSON.parse(serverRespStr);
+      } catch (e) {
+        console.error("GPT req err", e);
+        serverResp = { result: "Error" };
+      }
+    } else {
+      serverResp = { result: serverRespStr };
     }
 
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
-    range.setValue(serverResp.resultObj.result);
+    range.setValue(serverResp.result);
 
-    return { row: cell.row, col: cell.column, result: serverResp.resultObj };
+    return { row: cell.row, col: cell.column, result: serverResp };
   },
+
+  optionRead: async (cell) => {
+
+  }
 });
 
 
@@ -216,7 +228,7 @@ window.registerHeaderAgent = function () {
     const [selectedValue, setSelectedValue] = useState(defaultOption); // 初始默认值
 
     const handleChange = (value) => {
-      // aiAgentMapColumn[column] = value;
+      aiAgentMapColumn[column] = value;
       setSelectedValue(value);
       console.log("Selected:", value);
     };
@@ -241,23 +253,13 @@ window.registerHeaderAgent = function () {
       );
     };
 
-    const dropdownRender0 = (menu) => (
-      <div
-        style={{ zIndex: 1000, position: "relative" }}
-        onClick={() => handleClick("eee")}
-      >
-        {menu}
-      </div>
-    );
-
     return (
       <Select
         value={selectedValue}
-        style={{ width: 70 }}
+        style={{ width: 120 }}
         dropdownStyle={{ width: 120 }}
         onChange={handleChange}
         onSelect={handleChange}
-        dropdownRender={dropdownRender0}
       >
         <Option value="optionGPT">GPT</Option>
         <Option value="optionSearch">Search</Option>
@@ -289,8 +291,8 @@ window.newAIButton = function () {
     {
       width: 100,
       height: 54, // actually 50
-      x: "100%",
-      y: "100%",
+      marginX:"100%",
+      marginY:"100%",
     },
     "AIButton"
   ); // dom id
@@ -355,7 +357,7 @@ window.initColumnAgent = function () {
         column: 1,
       },
     },
-    { width: 100, height: 40, x: 0, y: 0 },
+    { width: 124, height: 40, marginX:0, marginY:0 },
     "ai-gpt" // dom id
   );
   const rsGPT2 = sheet.addFloatDomToColumnHeader(
@@ -371,7 +373,7 @@ window.initColumnAgent = function () {
         column: 2,
       },
     },
-    { width: 100, height: 40, x: 0, y: 0 },
+    { width: 124, height: 40, offsetX:0, offsetY:0 },
     "ai-select2" // dom id
   );
 
@@ -388,7 +390,7 @@ window.initColumnAgent = function () {
         column: 3,
       },
     },
-    { width: 100, height: 40, x: 0, y: 0 },
+    { width: 124, height: 40, offsetX:0, offsetY:0 },
     "ai-select3" // dom id
   );
 
@@ -406,7 +408,7 @@ window.initColumnAgent = function () {
         column: 4,
       },
     },
-    { width: 100, height: 40, x: 0, y: 0 },
+    { width: 124, height: 40, offsetX:0, offsetY:0 },
     "ai-select4" // dom id
   );
 };
