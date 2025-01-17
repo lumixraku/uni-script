@@ -11,6 +11,8 @@
  * such as setting up menus.
  */
 function onOpen() {
+  window.univerAPI = univerAPI;
+
   // For example, you can register a custom function.
   univerAPI.registerFunction({
     calculate: [
@@ -40,8 +42,24 @@ function onOpen() {
     .appendTo("ribbon.start.others");
 
 
+
     setTimeout(()=> {
-      window.registerInjectComp(Hello2);
+
+
+      // window.registerInjectCompGLOBAL(Hello2);
+
+      window.componentManager.register('univer.sheet.cell-hello2', Hello2);
+
+      let sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+      let range = sheet.getRange(1, 1, 2, 2);
+      sheet.setActiveRange(range);
+
+      console.log('range')
+      let disposable = range.attachPopup({
+        componentKey: 'univer.sheet.cell-hello2',
+        extraProps: { alert: { type: 0, title: 'This is an Info', message: 'This is an info message' } },
+      });
+
     }, 2000)
 }
 
@@ -74,8 +92,14 @@ async function myFunction() {
 function Hello2() {
   console.log("h222ello");
   return (
-    <div>
-      <h1>Hello2 World2</h1>
+    <div style={{
+      position: 'absolute',
+      // top: '50%',
+      // left: '20%',
+      // transform: 'translate(-40%, -50%)',
+      zIndex: 10,
+    }}>
+      <h1>Hello222 World222</h1>
     </div>
   );
 }
