@@ -111,7 +111,27 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   },
 
   optionRead: async (cell) => {
+    const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+    const range = sheet.getRange(cell.row, cell.column);
+    const url = range.getValue();
 
+    const serverRespStr = await univerAPI.runOnServer("agent", "web_reader", url);
+    console.log("optionRead.result:::", serverRespStr, "!!!"); // a string: {"result":"1998"}
+
+    let serverResp = {};
+    if (serverRespStr[0] === "{") {
+      try {
+        serverResp = JSON.parse(serverRespStr);
+      } catch (e) {
+        console.error("Read req err", e);
+        serverResp = { result: "Error" };
+      }
+    } else {
+      serverResp = { result: serverRespStr };
+    }
+
+    range.setValue(serverResp.result);
+    return { row: cell.row, col: cell.column, result: serverResp };
   }
 });
 
