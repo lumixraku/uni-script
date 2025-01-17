@@ -1,9 +1,38 @@
 const aiAgentMapColumn = (window.aiAgentMapColumnColumn = {
-  1: "optionTest",
+  1: "optionGPT",
   2: "optionGPT",
-  3: "optionGPT",
-  4: "optionGPT",
+  3: "optionSearch",
+  4: "optionSearch",
 });
+
+window.initData = function () {
+  const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+  let range = sheet.getRange("A2");
+  range.setValue("Apple");
+  range = sheet.getRange("A3");
+  range.setValue("Google");
+  range = sheet.getRange("A4");
+  range.setValue("Microsoft");
+  range = sheet.getRange("A5");
+  range.setValue("Meta");
+
+  range = sheet.getRange("B1");
+  range.setValue("Who is CEO");
+
+  range = sheet.getRange("C1");
+  range.setValue("Foundation year");
+
+  range = sheet.getRange("D1");
+  range.setValue("Income of 2022");
+
+  range = sheet.getRange("E1");
+  range.setValue("Profit of 2022");
+
+  for(let i=0; i < 10; i++) {
+    sheet.setColumnWidth(i, 110);
+  }
+  sheet.setRowHeight(0, 50);
+};
 
 /**
  * @param {row, column} cell
@@ -24,13 +53,14 @@ window.getAIPromptByCell = function (cell) {
 const aiAgentFnMap = (window.aiAgentFnMap = {
   optionTest: async (cell) => {
     const testvalue = await new Promise(resolve => setTimeout(() => resolve("a test"), 2000));
+    const range = sheet.getRange(cell.row, cell.column);
     range.setValue(testvalue);
     return { row: cell.row, col: cell.column, result: {result: testvalue} };
   },
   optionGPT: async (cell) => {
     const { prompt } = getAIPromptByCell(cell);
     const serverResp = await univerAPI.runOnServer("agent", "gpt", prompt);
-    console.log("serverResp.result:::", serverResp.result, "!!!!"); // a string: {"result":"1998"}
+    console.log("serverGPT.result:::", serverResp.result, "!!!!"); // a string: {"result":"1998"}
     if (serverResp.result[0] === "{") {
       try {
         serverResp.resultObj = JSON.parse(serverResp.result);
@@ -73,29 +103,7 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   },
 });
 
-window.initData = function () {
-  const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-  let range = sheet.getRange("A2");
-  range.setValue("Apple");
-  range = sheet.getRange("A3");
-  range.setValue("Google");
-  range = sheet.getRange("A4");
-  range.setValue("Microsoft");
-  range = sheet.getRange("A5");
-  range.setValue("Meta");
 
-  range = sheet.getRange("B1");
-  range.setValue("Who is CEO");
-
-  range = sheet.getRange("C1");
-  range.setValue("Foundation year");
-
-  range = sheet.getRange("D1");
-  range.setValue("Income of 2022");
-
-  range = sheet.getRange("E1");
-  range.setValue("Profit of 2022");
-};
 
 window.registerLoading = function () {
   const RangeLoading = () => {
@@ -148,27 +156,25 @@ window.registerAIButton = function () {
         .getActiveWorkbook()
         .getActiveSheet()
         .getActiveRange();
-
-      const {dispose: loadingDispose } = window.newLoadingRange();
-      let { startRow, startColumn, endRow, endColumn } = range._range;
-      for (let row = startRow; row <= endRow; row++) {
-        for (let column = startColumn; column <= endColumn; column++) {
-          // console.log(matrix[row][column]); // 打印当前元素
-          const aiFn =
-            aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
-          if (aiFn) {
-            reqs.push(aiFn({ row, column }));
+        let { startRow, startColumn, endRow, endColumn } = range._range;
+        console.log("range", range);
+        const {dispose: loadingDispose } = window.newLoadingRange();
+        for (let row = startRow; row <= endRow; row++) {
+          for (let column = startColumn; column <= endColumn; column++) {
+            const aiFn =
+              aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
+            if (aiFn) {
+              reqs.push(aiFn({ row, column }));
+            }
           }
         }
-      }
-      try {
-        const results = await Promise.all(reqs);
-        console.info("所有请求的结果:", results);
-        // 等待所有请求完成
-        loadingDispose();
-      } catch (error) {
-        console.error("请求出错:", error);
-      }
+        try {
+          const results = await Promise.all(reqs);
+          console.info("所有请求的结果:", results);
+          loadingDispose();
+        } catch (error) {
+          console.error("请求出错:", error, error.stack);
+        }
     };
     return (
       <button type="button" style={divStyle} onClick={clickHandler}>
@@ -343,9 +349,9 @@ window.initColumnAgent = function () {
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
       props: {
         column: 1,
-        agent: 'gpt',
       },
       data: {
+        defaultOption: "optionGPT",
         column: 1,
       },
     },
@@ -359,9 +365,9 @@ window.initColumnAgent = function () {
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
       props: {
         column: 2,
-        agent: 'optionGPT',
       },
       data: {
+        defaultOption: "optionGPT",
         column: 2,
       },
     },
@@ -375,8 +381,8 @@ window.initColumnAgent = function () {
       allowTransform: false,
       componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
       data: {
+        defaultOption: "optionSearch",
         column: 3,
-        agent: 'optionSearch',
       },
       props: {
         column: 3,
