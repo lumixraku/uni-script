@@ -37,15 +37,17 @@ window.initData = function () {
   range = sheet.getRange("G1");
   range.setValue("Financial Report Summary");
 
-  range = sheet.getRange("D2");
-  range.setValue("in form of $333,333");
+  // range = sheet.getRange("D2");
+  // range.setValue("in form of $333,333");
 
-  range = sheet.getRange("E2");
-  range.setValue("in form of $333,333");
+  // range = sheet.getRange("E2");
+  // range.setValue("in form of $333,333");
 
   for (let i = 0; i < 10; i++) {
     sheet.setColumnWidth(i, 130);
   }
+  sheet.setColumnWidth(3, 170);
+  sheet.setColumnWidth(4, 170);
   sheet.setRowHeight(0, 50);
 };
 
@@ -55,17 +57,45 @@ window.initData = function () {
 window.getAIPromptByCell = function (cell) {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
 
-  const firstColCell = sheet.getRange(cell.row, 0);
-  const firstColCellText = firstColCell.getValue();
-  const firstRowCell = sheet.getRange(0, cell.column);
-  const firstRowText = firstRowCell.getValue();
-  const detailText = sheet.getRange(1, cell.column).getValue();
-  const prompt = `${firstRowText} of ${firstColCellText} (${detailText})`;
+  const specWord = sheet.getRange(cell.row, 0).getValueAndRichTextValue();
+  const promptWord = sheet.getRange(0, cell.column).getValueAndRichTextValue();
+  const detailText = sheet.getRange(1, cell.column).getValueAndRichTextValue();
+  let prompt = `${promptWord} of ${specWord}`;
+  if (detailText) {
+    prompt += ` (${detailText})`;
+  }
 
   console.log("prompt cell", cell.row, cell.column);
   console.log("prompt::: " + prompt + " :::");
-  return { prompt };
+  return { prompt, promptWord, specWord  };
 };
+
+/**
+ * search agent result should saved. show this info when user click the cell.
+ * row{ col: {}}
+ */
+
+window.searchAgentResult ={}
+
+/**
+ *
+ * @param {*} param0
+ * @param {*} info
+ */
+// demo info
+
+window.saveSearchResult = function({row, col}, info) {
+  if(!window.saveSearchResult[row]) {
+    window.searchAgentResult[row] = {}
+  }
+  window.searchAgentResult[row][col] = info;
+}
+
+window.getSearchResult = function({ row, col}) {
+  if(window.searchAgentResult[row]) {
+    return searchAgentResult[row][col];
+  }
+}
 
 const aiAgentFnMap = (window.aiAgentFnMap = {
   optionTest: async (cell) => {
@@ -77,7 +107,11 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     return { row: cell.row, col: cell.column, result: { result: testvalue } };
   },
   optionGPT: async (cell) => {
-    const { prompt } = getAIPromptByCell(cell);
+    const { prompt, promptWord, specWord } = getAIPromptByCell(cell);
+    if(!promptWord || !specWord) {
+      // missing means that the promptWord/specWord is empty
+      return { row: cell.row, col: cell.column, missing: true };
+    }
     const serverRespStr = await univerAPI.runOnServer("agent", "gpt", prompt);
     console.log("serverGPT:::", serverRespStr, "!!!!"); // a string: {"result":"1998"}
 
@@ -101,7 +135,11 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   },
 
   optionSearch: async (cell) => {
-    const { prompt } = getAIPromptByCell(cell);
+    const { prompt, promptWord, specWord } = getAIPromptByCell(cell);
+    if(!promptWord || !specWord) {
+      // missing means that the promptWord/specWord is empty
+      return { row: cell.row, col: cell.column, missing: true };
+    }
     const serverRespStr = await univerAPI.runOnServer(
       "agent",
       "web_search",
@@ -125,6 +163,8 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
+    // {"result":"$99.8 billion","sources":["https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/"]}
+    window.saveSearchResult({row:cell.row, col: cell.column}, serverResp);
 
     return { row: cell.row, col: cell.column, result: serverResp };
   },
@@ -217,7 +257,11 @@ window.registerAIButton = function () {
           const aiFn =
             aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
           if (aiFn) {
-            reqs.push(aiFn({ row, column }));
+            const req = aiFn({ row, column });
+            if(!req.missing) {
+              reqs.push(req);
+
+            }
           }
         }
       }
@@ -269,8 +313,9 @@ window.registerHeaderAgent = function () {
   // console.log('Option', Option);
 
   const AIAgentSelect = (props) => {
-    console.log("select props", props);
+    console.log("select props", props.data);
     // const column = props.column ||;
+    const selectWidth = props.data.selectWidth;
     const column = props.data.column;
     const defaultOption = props.data.defaultOption || "optionGPT";
     console.log("default OPT", column, defaultOption);
@@ -393,7 +438,7 @@ window.registerHeaderAgent = function () {
     return (
       <Select
         value={selectedValue}
-        style={{ width: 120 }}
+        style={{ width: selectWidth || 120 }}
         dropdownStyle={{ width: 400 }} // 下拉菜单的宽度
         dropdownRender={dropdownRender}
         onChange={handleChange}
@@ -414,6 +459,98 @@ window.registerHeaderAgent = function () {
   };
   univerAPI.registerComponent("AIAgentSelect", AIAgentSelect);
 };
+
+window.newSearchListPanel = function () {
+  const SearchListPanel = () => {
+
+    const styles = {
+      panel: {
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden',
+        border: '1px solid #e5e7eb'
+      },
+      header: {
+        backgroundColor: '#3b82f6',
+        padding: '16px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        color: '#fff'
+      },
+      closeButton: {
+        background: 'none',
+        border: 'none',
+        color: '#fff',
+        cursor: 'pointer',
+        padding: '4px',
+        borderRadius: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      },
+      content: {
+        padding: '24px'
+      },
+      section: {
+        marginBottom: '20px'
+      },
+      title: {
+        fontSize: '18px',
+        fontWeight: 'bold',
+        marginBottom: '8px',
+        color: '#111827'
+      },
+      text: {
+        color: '#4b5563',
+        marginBottom: '16px',
+        lineHeight: '1.5'
+      },
+      link: {
+        color: '#3b82f6',
+        textDecoration: 'none'
+      }
+    };
+
+    return (
+      <div style={styles.panel}>
+        <div style={styles.header}>
+          <div>Source Information</div>
+          <button
+            style={styles.closeButton}
+            onClick={() => {
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={styles.content}>
+          <div style={styles.section}>
+            <h2 style={styles.title}>Full Answer:</h2>
+            <p style={styles.text}>The CEO of Apple Inc. is Tim Cook.</p>
+          </div>
+
+          <div style={styles.section}>
+            <h2 style={styles.title}>Source URL:</h2>
+            <a
+              href="https://www.apple.com/leadership/"
+              style={styles.link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              https://www.apple.com/leadership/
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  return SearchListPanel;
+  // window.SearchListPanel = SearchListPanel;
+  // univerAPI.registerComponent("SearchListPanel", SearchListPanel);
+}
 
 // for initSelectionEnd
 window.newAIButton = function () {
@@ -486,6 +623,48 @@ window.initSelectionEnd = function () {
   });
 };
 
+window.showSearchListPanel = function (data) {
+  // const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+  const container = document.querySelector('section#univer-container');
+  if (!container) return;
+  const mountNode = document.createElement('div');
+  mountNode.classList.add('search-wrapper');
+  const rect = container.getBoundingClientRect();
+
+  // 计算绝对位置
+  const top = rect.top + 16; // 16px 的偏移量
+  const right = window.innerWidth - (rect.right ) + 16; // 16px 的偏移量
+
+  // 设置挂载节点样式
+  mountNode.style.position = 'absolute';
+  mountNode.style.top = `${top}px`;
+  mountNode.style.right = `${right}px`;
+  mountNode.style.width = '480px';
+  mountNode.style.zIndex = '9999'; // 确保在最顶层
+
+  container.appendChild(mountNode);
+
+  const createRoot = univerAPI.UI.ReactDOM.createRoot;
+  const root = createRoot(mountNode);
+  // 定义关闭函数
+  const dispose = () => {
+    console.log('dispose search panel')
+    root.unmount();
+    mountNode.remove();
+  };
+  const SearchListPanel = window.newSearchListPanel();
+  // 渲染组件
+  console.log('root render')
+  root.render(
+    <SearchListPanel onClose={dispose} data={data} />
+  );
+
+  return {
+    id: 'SearchListPanel',
+    dispose,
+  }
+}
+
 window.initColumnAgent = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   const rsGPT1 = sheet.addFloatDomToColumnHeader(
@@ -529,12 +708,13 @@ window.initColumnAgent = function () {
       data: {
         defaultOption: "optionSearch",
         column: 3,
+        selectWidth: 150,
       },
       props: {
         column: 3,
       },
     },
-    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
+    { width: 154, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select3" // dom id
   );
 
@@ -546,13 +726,14 @@ window.initColumnAgent = function () {
       data: {
         defaultOption: "optionSearch",
         column: 4,
+        selectWidth: 150,
       },
       props: {
         defaultOption: "optionSearch",
         column: 4,
       },
     },
-    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
+    { width: 154, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select4" // dom id
   );
 
@@ -570,10 +751,30 @@ window.initColumnAgent = function () {
         column: 6,
       },
     },
-    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
+    { width: 164, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select6" // dom id
   );
 };
+
+
+window.initCellClickEvent = (cell) => {
+  window.disposeSearchPanel = () => {};
+  univerAPI.addEvent(univerAPI.Event.SelectionChanged, (p)=> {
+    // const { worksheet, workbook, row, column, value, isZenEditor } = params;
+    if (!p.selections[0]) return;
+    const endRow = p.selections[0].endRow;
+    const endCol = p.selections[0].endColumn;
+
+    const searchResult = window.getSearchResult({row: endRow, col: endRow})
+    console.log('initCellClickEvent', searchResult, endRow, endRow);
+    if(searchResult) {
+      const {id, dispose} = showSearchListPanel(searchResult);
+      window.disposeSearchPanel = dispose;
+    } else {
+      window.disposeSearchPanel();
+    }
+  });
+}
 
 function onOpen() {
   setTimeout(() => {
@@ -582,6 +783,13 @@ function onOpen() {
     registerAIButton();
     registerHeaderAgent();
     initSelectionEnd();
+    initCellClickEvent();
     initColumnAgent();
+
+
+    // test
+
+    // window.saveSearchResult({row: 0, col: 0, },  {"result":"$99.8 billion","sources":["https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/"]});
+
   }, 1000);
 }
