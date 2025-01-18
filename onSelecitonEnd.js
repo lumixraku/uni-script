@@ -8,19 +8,22 @@ const aiAgentMapColumn = (window.aiAgentMapColumn = {
 window.initData = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   let range = sheet.getRange("A2");
-  range.setValue("Apple");
+  range.setValue("Description");
+
   range = sheet.getRange("A3");
-  range.setValue("Google");
+  range.setValue("Apple");
   range = sheet.getRange("A4");
-  range.setValue("Microsoft");
+  range.setValue("Google");
   range = sheet.getRange("A5");
+  range.setValue("Microsoft");
+  range = sheet.getRange("A6");
   range.setValue("Meta");
 
   range = sheet.getRange("B1");
-  range.setValue("Who is CEO");
+  range.setValue("CEO");
 
   range = sheet.getRange("C1");
-  range.setValue("Foundation year");
+  range.setValue("Foundation time");
 
   range = sheet.getRange("D1");
   range.setValue("Income of 2022");
@@ -28,7 +31,19 @@ window.initData = function () {
   range = sheet.getRange("E1");
   range.setValue("Profit of 2022");
 
-  for(let i=0; i < 10; i++) {
+  range = sheet.getRange("F1");
+  range.setValue("Financial Report Link");
+
+  range = sheet.getRange("G1");
+  range.setValue("Financial Report Summary");
+
+  range = sheet.getRange("D2");
+  range.setValue("in form of $333,333");
+
+  range = sheet.getRange("E2");
+  range.setValue("in form of $333,333");
+
+  for (let i = 0; i < 10; i++) {
     sheet.setColumnWidth(i, 130);
   }
   sheet.setRowHeight(0, 50);
@@ -44,7 +59,9 @@ window.getAIPromptByCell = function (cell) {
   const firstColCellText = firstColCell.getValue();
   const firstRowCell = sheet.getRange(0, cell.column);
   const firstRowText = firstRowCell.getValue();
-  const prompt = `${firstRowText} of ${firstColCellText}`;
+  const detailText = sheet.getRange(1, cell.column).getValue();
+  const prompt = `${firstRowText} of ${firstColCellText} (${detailText})`;
+
   console.log("prompt cell", cell.row, cell.column);
   console.log("prompt::: " + prompt + " :::");
   return { prompt };
@@ -52,10 +69,12 @@ window.getAIPromptByCell = function (cell) {
 
 const aiAgentFnMap = (window.aiAgentFnMap = {
   optionTest: async (cell) => {
-    const testvalue = await new Promise(resolve => setTimeout(() => resolve("a test"), 2000));
+    const testvalue = await new Promise((resolve) =>
+      setTimeout(() => resolve("a test"), 2000)
+    );
     const range = sheet.getRange(cell.row, cell.column);
     range.setValue(testvalue);
-    return { row: cell.row, col: cell.column, result: {result: testvalue} };
+    return { row: cell.row, col: cell.column, result: { result: testvalue } };
   },
   optionGPT: async (cell) => {
     const { prompt } = getAIPromptByCell(cell);
@@ -112,10 +131,14 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
 
   optionRead: async (cell) => {
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-    const range = sheet.getRange(cell.row, cell.column);
+    let range = sheet.getRange(cell.row, cell.column - 1);
     const url = range.getValue();
 
-    const serverRespStr = await univerAPI.runOnServer("agent", "web_reader", url);
+    const serverRespStr = await univerAPI.runOnServer(
+      "agent",
+      "web_reader",
+      url
+    );
     console.log("optionRead.result:::", serverRespStr, "!!!"); // a string: {"result":"1998"}
 
     let serverResp = {};
@@ -129,13 +152,11 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     } else {
       serverResp = { result: serverRespStr };
     }
-
+    range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
     return { row: cell.row, col: cell.column, result: serverResp };
-  }
+  },
 });
-
-
 
 window.registerLoading = function () {
   const RangeLoading = () => {
@@ -188,25 +209,29 @@ window.registerAIButton = function () {
         .getActiveWorkbook()
         .getActiveSheet()
         .getActiveRange();
-        let { startRow, startColumn, endRow, endColumn } = range._range;
-        console.log("range", range);
-        const {dispose: loadingDispose } = window.newLoadingRange();
-        for (let row = startRow; row <= endRow; row++) {
-          for (let column = startColumn; column <= endColumn; column++) {
-            const aiFn =
-              aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
-            if (aiFn) {
-              reqs.push(aiFn({ row, column }));
-            }
+      let { startRow, startColumn, endRow, endColumn } = range._range;
+      console.log("range", range);
+      const { dispose: loadingDispose } = window.newLoadingRange();
+      for (let row = startRow; row <= endRow; row++) {
+        for (let column = startColumn; column <= endColumn; column++) {
+          const aiFn =
+            aiAgentFnMap[aiAgentMapColumn[column]] || aiAgentFnMap.optionGPT;
+          if (aiFn) {
+            reqs.push(aiFn({ row, column }));
           }
         }
-        try {
-          const results = await Promise.all(reqs);
-          console.info("所有请求的结果:", results);
+      }
+      try {
+        setTimeout(() => {
           loadingDispose();
-        } catch (error) {
-          console.error("请求出错:", error, error.stack);
-        }
+        }, 10000);
+        const results = await Promise.all(reqs);
+        console.info("所有请求的结果:", results);
+        loadingDispose();
+      } catch (error) {
+        console.error("请求出错:", error, error.stack);
+        loadingDispose();
+      }
     };
     return (
       <button type="button" style={divStyle} onClick={clickHandler}>
@@ -235,6 +260,10 @@ window.registerAIButton = function () {
 window.registerHeaderAgent = function () {
   const Option = univerAPI.UI.Select.Option;
   const Select = univerAPI.UI.Select;
+  const SearchIcon = univerAPI.UI.Icon.Chrome;
+  const ReadIcon = univerAPI.UI.Icon.WriteSingle;
+  const GPTIcon = univerAPI.UI.Icon.AiSingle;
+
   const useState = univerAPI.UI.React.useState;
   // console.log('select', Select);
   // console.log('Option', Option);
@@ -257,19 +286,66 @@ window.registerHeaderAgent = function () {
       setSelectedValue(value);
       console.log("Selected:", value);
     };
+
+    const agentDetail = {
+      optionGPT: {
+        icon: GPTIcon,
+        title: "GPT",
+        desc: "Ask questions directly to the LLM.",
+      },
+      optionSearch: {
+        icon: SearchIcon,
+        title: "Web Search",
+        desc: "Search the web for information.",
+      },
+      optionRead: {
+        icon: ReadIcon,
+        title: "Read",
+        desc: "Read documents and extract information.",
+      },
+    };
+
+    // 最简单的自定义 dropdownRender
     const dropdownRender = (menu) => {
-      // 确保直接返回原始的 menu
+      console.log('menu structure:', menu);  // 先看看 menu 的结构
+      const customMenu = React.cloneElement(menu, {
+        children: React.Children.map(menu.props.children, (child) => {
+          const value = child.props.value;
+          const { icon: IconComponent, title, desc } = agentDetail[value] || {};
+          console.log("child", child, value, IconComponent, title, desc);
+
+          return React.cloneElement(child, {
+            children: (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "8px",
+                }}
+              >
+                {IconComponent && (
+                  <IconComponent
+                    style={{
+                      fontSize: 24,
+                      marginRight: 10,
+                    }}
+                  />
+                )}
+                <div className="desc-part">
+                  <div style={{ fontWeight: "bold" }}>{title}</div>
+                  <div style={{ color: "gray", fontSize: "12px" }}>{desc}</div>
+                </div>
+              </div>
+            ),
+          });
+        }),
+      });
       return (
-        <div style={{ zIndex: 1400, position: "relative" }}>
-          {React.Children.map(menu.props.children, (child) => (
-            <div
-              onClick={() => handleClick(child.props.value)}
-              style={{ padding: "8px", cursor: "pointer" }}
-            >
-              {child}
-            </div>
-          ))}
-        </div>
+        <>
+          <div style={{ padding: "8px", borderBottom: "0px solid #ccc" }}></div>
+          {customMenu}
+          <div style={{ padding: "8px", borderTop: "0px solid #ccc" }}></div>
+        </>
       );
     };
 
@@ -277,7 +353,7 @@ window.registerHeaderAgent = function () {
       <Select
         value={selectedValue}
         style={{ width: 120 }}
-        dropdownStyle={{ width: 120 }}
+        dropdownRender={dropdownRender}
         onChange={handleChange}
         onSelect={handleChange}
       >
@@ -311,8 +387,8 @@ window.newAIButton = function () {
     {
       width: 100,
       height: 54, // actually 50
-      marginX:"100%",
-      marginY:"100%",
+      marginX: "100%",
+      marginY: "100%",
     },
     "AIButton"
   ); // dom id
@@ -322,7 +398,7 @@ window.newAIButton = function () {
   };
 };
 
-window.newLoadingRange = function() {
+window.newLoadingRange = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   const range = univerAPI.getActiveWorkbook().getActiveSheet().getActiveRange();
   const { id, dispose } = sheet.addFloatDomToRange(
@@ -335,13 +411,13 @@ window.newLoadingRange = function() {
       },
     },
     {},
-    "RangeLoading"  // dom id
+    "RangeLoading" // dom id
   );
   return {
     id,
     dispose,
   };
-}
+};
 
 window.initSelectionEnd = function () {
   window.btnId;
@@ -377,7 +453,7 @@ window.initColumnAgent = function () {
         column: 1,
       },
     },
-    { width: 124, height: 40, marginX:0, marginY:0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0 },
     "ai-gpt" // dom id
   );
   const rsGPT2 = sheet.addFloatDomToColumnHeader(
@@ -393,7 +469,7 @@ window.initColumnAgent = function () {
         column: 2,
       },
     },
-    { width: 124, height: 40, offsetX:0, offsetY:0 },
+    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
     "ai-select2" // dom id
   );
 
@@ -410,7 +486,7 @@ window.initColumnAgent = function () {
         column: 3,
       },
     },
-    { width: 124, height: 40, offsetX:0, offsetY:0 },
+    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
     "ai-select3" // dom id
   );
 
@@ -428,8 +504,26 @@ window.initColumnAgent = function () {
         column: 4,
       },
     },
-    { width: 124, height: 40, offsetX:0, offsetY:0 },
+    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
     "ai-select4" // dom id
+  );
+
+  const select6 = sheet.addFloatDomToColumnHeader(
+    6,
+    {
+      allowTransform: false,
+      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
+      data: {
+        defaultOption: "optionSearch",
+        column: 6,
+      },
+      props: {
+        defaultOption: "optionSearch",
+        column: 6,
+      },
+    },
+    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
+    "ai-select6" // dom id
   );
 };
 
