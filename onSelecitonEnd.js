@@ -203,12 +203,13 @@ window.registerLoading = function () {
     const divStyle = {
       width: "100%",
       height: "100%",
-      backgroundColor: "#fff",
-      border: "1px solid #ccc",
+      backgroundColor: "#d2d9f9",
+      border: "1px solid #6678e9",
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
       textAlign: "center",
+      opacity: 0.8
     };
 
     return <div style={divStyle}>Loading...</div>;
@@ -218,30 +219,6 @@ window.registerLoading = function () {
 
 window.registerAIButton = function () {
   const AIButton = () => {
-    const divStyle = {
-      width: "80px",
-      height: "50px",
-      backgroundColor: "#fff",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      textAlign: "center",
-      borderRadius: "25px",
-      border: "none",
-      color: "white",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-
-      background:
-        "linear-gradient(90deg, #00C9FF 0%, #92FE9D 50%, #00C9FF 100%)",
-      backgroundSize: "200% auto",
-      animation: "gradient 3s linear infinite",
-
-      ":hover": {
-        transform: "translateY(-2px)",
-        boxShadow: "0 10px 20px rgba(0, 201, 255, 0.3)",
-      },
-    };
     const clickHandler = async () => {
       const reqs = [];
       const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
@@ -260,42 +237,81 @@ window.registerAIButton = function () {
             const req = aiFn({ row, column });
             if(!req.missing) {
               reqs.push(req);
-
             }
           }
         }
       }
       try {
-        setTimeout(() => {
+        if(reqs.length) {
           loadingDispose();
-        }, 10000);
-        const results = await Promise.all(reqs);
-        console.info("所有请求的结果:", results);
-        loadingDispose();
+          setTimeout(() => {
+            loadingDispose();
+          }, 10000);
+          const results = await Promise.all(reqs);
+          console.info("所有请求的结果:", results);
+        }
       } catch (error) {
         console.error("请求出错:", error, error.stack);
         loadingDispose();
       }
     };
+    const GPTIcon = univerAPI.UI.Icon.AiSingle;
     return (
-      <button type="button" style={divStyle} onClick={clickHandler}>
-        AI
+      <button
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '6px',
+          padding: '8px 16px',
+          border: 'none',
+          borderRadius: '20px',
+          color: 'white',
+          fontSize: '14px',
+          fontWeight: '500',
+          cursor: 'pointer',
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: '#4e67eb'
+        }}
+        onClick={clickHandler}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '200%',
+            height: '100%',
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+            animation: 'shine 3s infinite linear'
+          }}
+        />
+        <span style={{ position: 'relative', zIndex: 1 }}>
+          <GPTIcon />
+        </span>
+        <span style={{ position: 'relative', zIndex: 1 }}>Run</span>
         <style>
-          {`
-                    @keyframes gradient {
-                        0% { background-position: 0% 50%; }
-                        50% { background-position: 100% 50%; }
-                        100% { background-position: 0% 50%; }
-                    }
-
-                    button:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 10px 20px rgba(0, 201, 255, 0.3);
-                    }
-                `}
+        {`
+          @keyframes shine {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(50%); }
+          }
+          button {
+            cursor: pointer;
+          }
+          button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(78, 103, 235, 0.3);
+            cursor: pointer;
+          }
+          button:active {
+            transform: translateY(0);
+            cursor: pointer;
+          }
+        `}
         </style>
       </button>
-    );
+    )
   };
 
   univerAPI.registerComponent("AIButton", AIButton);
