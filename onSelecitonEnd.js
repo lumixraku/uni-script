@@ -1,8 +1,8 @@
 const aiAgentMapColumn = (window.aiAgentMapColumn = {
-  1: "optionGPT",
-  2: "optionGPT",
-  3: "optionSearch",
-  4: "optionSearch",
+  // 1: "optionGPT",
+  // 2: "optionGPT",
+  // 3: "optionSearch",
+  // 4: "optionSearch",
 });
 
 window.initData = function () {
@@ -44,12 +44,15 @@ window.initData = function () {
   // range.setValue("in form of $333,333");
 
   for (let i = 0; i < 10; i++) {
-    sheet.setColumnWidth(i, 130);
+    sheet.setColumnWidth(i, 170);
   }
-  sheet.setColumnWidth(3, 170);
-  sheet.setColumnWidth(4, 170);
+  for(let i = 2; i < 8; i++) {
+    sheet.autoFitRow(i);
+  }
   sheet.setRowHeight(0, 50);
+  univerAPI.customizeColumnHeader({ headerStyle: { textAlign: 'left',  fontSize: 9 } });
 };
+
 
 /**
  * @param {row, column} cell
@@ -89,6 +92,7 @@ window.saveSearchResult = function({row, col}, info) {
     window.searchAgentResult[row] = {}
   }
   window.searchAgentResult[row][col] = info;
+  console.log('save new search result', window.searchAgentResult);
 }
 
 window.getSearchResult = function({ row, col}) {
@@ -243,7 +247,6 @@ window.registerAIButton = function () {
       }
       try {
         if(reqs.length) {
-          loadingDispose();
           setTimeout(() => {
             loadingDispose();
           }, 10000);
@@ -336,7 +339,7 @@ window.registerHeaderAgent = function () {
     const defaultOption = props.data.defaultOption || "optionGPT";
     console.log("default OPT", column, defaultOption);
     const [selectedValue, setSelectedValue] = useState(defaultOption); // 初始默认值
-
+    window.aiAgentMapColumn[column] = defaultOption;
     const handleChange = (value) => {
       aiAgentMapColumn[column] = value;
       setSelectedValue(value);
@@ -368,39 +371,6 @@ window.registerHeaderAgent = function () {
 
     // 最简单的自定义 dropdownRender
     const dropdownRender = (menu) => {
-      // console.log('menu structure:', menu);  // 先看看 menu 的结构
-      // const customMenu = React.cloneElement(menu, {
-      //   children: React.Children.map(menu.props.children, (child) => {
-      //     const value = child.props.value;
-      //     const { icon: IconComponent, title, desc } = agentDetail[value] || {};
-      //     console.log("child", child, value, IconComponent, title, desc);
-
-      //     return React.cloneElement(child, {
-      //       children: (
-      //         <div
-      //           style={{
-      //             display: "flex",
-      //             alignItems: "center",
-      //             padding: "8px",
-      //           }}
-      //         >
-      //           {IconComponent && (
-      //             <IconComponent
-      //               style={{
-      //                 fontSize: 24,
-      //                 marginRight: 10,
-      //               }}
-      //             />
-      //           )}
-      //           <div className="desc-part">
-      //             <div style={{ fontWeight: "bold" }}>{title}</div>
-      //             <div style={{ color: "gray", fontSize: "12px" }}>{desc}</div>
-      //           </div>
-      //         </div>
-      //       ),
-      //     });
-      //   }),
-      // });
       return (
         <>
           <div style={{ padding: "8px", borderBottom: "0px solid #ccc" }}></div>
@@ -753,6 +723,25 @@ window.initColumnAgent = function () {
     "ai-select4" // dom id
   );
 
+  const select5 = sheet.addFloatDomToColumnHeader(
+    5,
+    {
+      allowTransform: false,
+      componentKey: "AIAgentSelect", // React comp key registered in ComponentManager
+      data: {
+        defaultOption: "optionSearch",
+        column: 5,
+        selectWidth: 150,
+      },
+      props: {
+        defaultOption: "optionSearch",
+        column: 5,
+      },
+    },
+    { width: 154, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
+    "ai-select5" // dom id
+  );
+
   const select6 = sheet.addFloatDomToColumnHeader(
     6,
     {
@@ -761,13 +750,14 @@ window.initColumnAgent = function () {
       data: {
         defaultOption: "optionSearch",
         column: 6,
+        selectWidth: 150,
       },
       props: {
         defaultOption: "optionSearch",
         column: 6,
       },
     },
-    { width: 164, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
+    { width: 154, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select6" // dom id
   );
 };
@@ -775,14 +765,14 @@ window.initColumnAgent = function () {
 
 window.initCellClickEvent = (cell) => {
   window.disposeSearchPanel = () => {};
-  univerAPI.addEvent(univerAPI.Event.SelectionChanged, (p)=> {
+  univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p)=> {
     // const { worksheet, workbook, row, column, value, isZenEditor } = params;
     if (!p.selections[0]) return;
     const endRow = p.selections[0].endRow;
     const endCol = p.selections[0].endColumn;
 
-    const searchResult = window.getSearchResult({row: endRow, col: endRow})
-    console.log('initCellClickEvent', searchResult, endRow, endRow);
+    const searchResult = window.getSearchResult({row: endRow, col: endCol})
+    console.log('initCellClickEvent', searchResult, endRow, endCol);
     if(searchResult) {
       const {id, dispose} = showSearchListPanel(searchResult);
       window.disposeSearchPanel = dispose;
