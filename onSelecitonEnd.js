@@ -307,60 +307,108 @@ window.registerHeaderAgent = function () {
 
     // 最简单的自定义 dropdownRender
     const dropdownRender = (menu) => {
-      console.log('menu structure:', menu);  // 先看看 menu 的结构
-      const customMenu = React.cloneElement(menu, {
-        children: React.Children.map(menu.props.children, (child) => {
-          const value = child.props.value;
-          const { icon: IconComponent, title, desc } = agentDetail[value] || {};
-          console.log("child", child, value, IconComponent, title, desc);
+      // console.log('menu structure:', menu);  // 先看看 menu 的结构
+      // const customMenu = React.cloneElement(menu, {
+      //   children: React.Children.map(menu.props.children, (child) => {
+      //     const value = child.props.value;
+      //     const { icon: IconComponent, title, desc } = agentDetail[value] || {};
+      //     console.log("child", child, value, IconComponent, title, desc);
 
-          return React.cloneElement(child, {
-            children: (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  padding: "8px",
-                }}
-              >
-                {IconComponent && (
-                  <IconComponent
-                    style={{
-                      fontSize: 24,
-                      marginRight: 10,
-                    }}
-                  />
-                )}
-                <div className="desc-part">
-                  <div style={{ fontWeight: "bold" }}>{title}</div>
-                  <div style={{ color: "gray", fontSize: "12px" }}>{desc}</div>
-                </div>
-              </div>
-            ),
-          });
-        }),
-      });
+      //     return React.cloneElement(child, {
+      //       children: (
+      //         <div
+      //           style={{
+      //             display: "flex",
+      //             alignItems: "center",
+      //             padding: "8px",
+      //           }}
+      //         >
+      //           {IconComponent && (
+      //             <IconComponent
+      //               style={{
+      //                 fontSize: 24,
+      //                 marginRight: 10,
+      //               }}
+      //             />
+      //           )}
+      //           <div className="desc-part">
+      //             <div style={{ fontWeight: "bold" }}>{title}</div>
+      //             <div style={{ color: "gray", fontSize: "12px" }}>{desc}</div>
+      //           </div>
+      //         </div>
+      //       ),
+      //     });
+      //   }),
+      // });
       return (
         <>
           <div style={{ padding: "8px", borderBottom: "0px solid #ccc" }}></div>
-          {customMenu}
+          {menu}
           <div style={{ padding: "8px", borderTop: "0px solid #ccc" }}></div>
         </>
       );
     };
 
+    // 自定义每个 Option 的内容
+    const getOptionLabel = (value) => {
+      const { icon: IconComponent, title, desc } = agentDetail[value] || {};
+      return (
+          <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px'
+          }}>
+              {IconComponent && (
+                  <IconComponent style={{
+                      fontSize: 24,
+                      marginRight: 10
+                  }} />
+              )}
+              <div>
+                  <div style={{ fontWeight: 'bold' }}>{title}</div>
+                  <div style={{ color: 'gray', fontSize: '12px' }}>{desc}</div>
+              </div>
+          </div>
+      );
+  };
+
+  const getSelectedLabel = (value) => {
+    const { icon: IconComponent, title } = agentDetail[value] || {};
+    return (
+        <div style={{
+            display: 'flex',
+            alignItems: 'center'
+        }}>
+            {IconComponent && (
+                <IconComponent style={{
+                    fontSize: 20,
+                    marginRight: 8
+                }} />
+            )}
+            <span>{title}</span>
+        </div>
+    );
+};
+
     return (
       <Select
         value={selectedValue}
         style={{ width: 120 }}
+        dropdownStyle={{ width: 400 }} // 下拉菜单的宽度
         dropdownRender={dropdownRender}
         onChange={handleChange}
         onSelect={handleChange}
+        optionLabelProp="label"  // 指定使用 Option 的哪个 prop 作为选中显示
       >
-        <Option value="optionGPT">GPT</Option>
-        <Option value="optionSearch">Search</Option>
-        <Option value="optionRead">Read</Option>
-        <Option value="optionFinance">Finance</Option>
+        <Option value="optionGPT" label={getSelectedLabel("optionGPT")}  >
+          {getOptionLabel("optionGPT")}
+        </Option>
+        <Option value="optionSearch" label={getSelectedLabel("optionSearch")}  >
+          {getOptionLabel("optionSearch")}
+        </Option>
+        <Option value="optionRead" label={getSelectedLabel("optionRead")}  >
+          {getOptionLabel("optionRead")}
+        </Option>
       </Select>
     );
   };
@@ -453,7 +501,7 @@ window.initColumnAgent = function () {
         column: 1,
       },
     },
-    { width: 124, height: 40, marginX: 0, marginY: 0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-gpt" // dom id
   );
   const rsGPT2 = sheet.addFloatDomToColumnHeader(
@@ -469,7 +517,7 @@ window.initColumnAgent = function () {
         column: 2,
       },
     },
-    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select2" // dom id
   );
 
@@ -486,7 +534,7 @@ window.initColumnAgent = function () {
         column: 3,
       },
     },
-    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select3" // dom id
   );
 
@@ -504,7 +552,7 @@ window.initColumnAgent = function () {
         column: 4,
       },
     },
-    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select4" // dom id
   );
 
@@ -522,7 +570,7 @@ window.initColumnAgent = function () {
         column: 6,
       },
     },
-    { width: 124, height: 40, offsetX: 0, offsetY: 0 },
+    { width: 124, height: 40, marginX: 0, marginY: 0, horizonOffsetAlign: "right" },
     "ai-select6" // dom id
   );
 };
