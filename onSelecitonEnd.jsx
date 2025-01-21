@@ -13,7 +13,6 @@ window.initDomLayout = function () {
   domLoading.style.width = "100%";
   domLoading.style.height = "100%";
   domLoading.style.background = "#fff";
-  domLoading.style.display = "flex";
   domLoading.style.zIndex = "9999";
   document.body.appendChild(domLoading);
 
@@ -26,11 +25,7 @@ window.initDomLayout = function () {
     const bg = document.querySelectorAll(
       ".h-dvh > .flex.size-full.flex-col"
     )[0];
-    bg.style.background = `linear-gradient(180deg,
-    #00C5A8 0%,
-    #00BBB0 25%,
-    #029DCE 50%,
-    #0C81ED 100%)`;
+    bg.style.background = `linear-gradient(180deg, rgb(102 111 135) 0%, rgb(108 108 155) 100%)`;
 
     const univerContainer = document.querySelector("section#univer-container");
     univerContainer.style.margin = "10px";
@@ -165,9 +160,12 @@ window.searchAgentResult = {};
 // demo info
 
 window.saveSearchResult = function ({ row, col }, info) {
+  if(info.result === "Failed") return;
+
   if (!window.saveSearchResult[row]) {
     window.searchAgentResult[row] = {};
   }
+
   window.searchAgentResult[row][col] = info;
   console.log("save new search result", window.searchAgentResult);
 };
@@ -251,10 +249,6 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     sheet.autoFitRow(cell.row);
     // {"result":"$99.8 billion","sources":["https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/"]}
     window.saveSearchResult({ row: cell.row, col: cell.column }, serverResp);
-    // showSearchListPanel if req is only one
-    // if (searchStatus) {
-    //   showSearchListPanel(serverResp);
-    // }
     return { row: cell.row, col: cell.column, result: serverResp };
   },
 
@@ -283,6 +277,7 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     }
     range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
+    console.log('option read set value', serverResp.result);
     return { row: cell.row, col: cell.column, result: serverResp };
   },
 
@@ -299,18 +294,35 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
 function initHeader() {
   function CustomHeader() {
     return (
-      <div className="custom-header" style={{ height: 72 }}>
+      <div
+        className="custom-header"
+        style={{
+          height: 72,
+          display: "flex",
+          alignItems: "center",
+          paddingLeft: 20,
+        }}
+      >
+        <img
+          alt="logo"
+          loading="lazy"
+          width="106"
+          height="32"
+          decoding="async"
+          class="mr-[44px]"
+          style={{color:'transparent'}}
+          src="https://univer.ai/_next/static/media/logo.cac2ea9f.svg"
+        ></img>
         <div
           className="custom-header-title"
           style={{
             fontSize: 20,
             position: "relative",
-            top: 20,
-            left: 20,
-            color: '#fff',
+            color: "#fff",
+            marginLeft: 20
           }}
         >
-          Univer AI Complete Sheet
+          AI Complete Sheet
         </div>
       </div>
     );
@@ -382,22 +394,27 @@ window.registerAIButton = function registerAIButton() {
         .getActiveRange();
       let { startRow, startColumn, endRow, endColumn } = range._range;
       console.log("range", range);
-      const { dispose: loadingDispose } = window.newLoadingRange();
       for (let row = startRow; row <= endRow; row++) {
         for (let column = startColumn; column <= endColumn; column++) {
           const aiFnName = window.aiAgentMapColumn.get(column); //  optionGPT, optionSearch, optionRead
           const aiFn = aiAgentFnMap[aiFnName] || aiAgentFnMap.optionGPT;
-          if (aiFn) {
-            const req = aiFn({ row, column });
-            if (!(req.missing === true)) {
+
+          const { missing } = getAIPromptByCell({ row, column });
+          if (!missing) {
+            // missing means that the promptWord/valueWord is empty
+            if (aiFn) {
+              const req = aiFn({ row, column });
               reqs.push({ cell: { row, col: column }, req, aiFnName });
             }
           }
         }
       }
+
+      let st;
       try {
         if (reqs.length) {
-          setTimeout(() => {
+          const { dispose: loadingDispose } = window.newLoadingRange();
+          st = setTimeout(() => {
             loadingDispose();
           }, 30000);
           const reqAsyncFns = reqs.map((r) => r.req);
@@ -410,6 +427,8 @@ window.registerAIButton = function registerAIButton() {
             const req = reqs[0];
             if (req.aiFnName === "optionSearch") {
               if (results[0]) {
+                console.log('search_list', results[0]);
+                // results[0].result ---> { result: '{..}', sources: [{...}]}
                 window.showSearchListPanel(results[0].result);
               }
             }
@@ -418,6 +437,8 @@ window.registerAIButton = function registerAIButton() {
       } catch (error) {
         console.error("请求出错:", error, error.stack);
         loadingDispose();
+      } finally {
+        clearTimeout(st);
       }
     };
     const GPTIcon = univerAPI.UI.Icon.AiSingle;
@@ -437,6 +458,7 @@ window.registerAIButton = function registerAIButton() {
           position: "relative",
           overflow: "hidden",
           backgroundColor: "#4e67eb",
+          marginTop: '5px',
         }}
         onClick={clickHandler}
       >
@@ -880,7 +902,16 @@ window.initSelectionEnd = function initSelectionEnd() {
   });
 };
 
+/**
+ * data: {result: string, sources: [{url: string, title: string, description: string}]}
+ *
+ * @param {*} data
+ * @returns
+ */
 window.showSearchListPanel = function showSearchListPanel(data) {
+  if(!data) return;
+  if(data.result == 'Failed') return;
+
   // const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   const container = document.querySelector(
     "section#univer-container"
@@ -1150,6 +1181,10 @@ window.initCellClickEvent = () => {
     if (!p.selections[0]) return;
     const endRow = p.selections[0].endRow;
     const endCol = p.selections[0].endColumn;
+
+    if (window.disposeSearchPanel) {
+      window.disposeSearchPanel();
+    }
 
     const searchResult = window.getSearchResult({ row: endRow, col: endCol });
     console.log("initCellClickEvent", searchResult, endRow, endCol);
