@@ -3,6 +3,15 @@
  */
 const aiAgentMapColumn = (window.aiAgentMapColumn = new Map());
 
+window.initDomLayout = function() {
+  setTimeout(() => {
+    document.querySelectorAll('header')[0].style.display = 'none';
+    document.querySelectorAll('header')[1].style.display = 'none';
+    document.querySelectorAll('.univer-formula-box')[0].style.display = 'none'
+    document.querySelectorAll('footer').style.display = 'none';
+  }, 0);
+}
+
 window.initData = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   let range = sheet.getRange("A2");
@@ -53,7 +62,7 @@ window.initData = function () {
   sheet.setRowHeight(0, 60);
 
   univerAPI.customizeColumnHeader({
-    headerStyle: { textAlign: "left", fontSize: 9, size: 46 },
+    headerStyle: { textAlign: "left", fontSize: 12, size: 36 },
   });
 
   univerAPI.getActiveWorkbook()
@@ -316,7 +325,7 @@ window.registerAIButton = function registerAIButton() {
         if (reqs.length) {
           setTimeout(() => {
             loadingDispose();
-          }, 20000);
+          }, 30000);
           const reqAsyncFns = reqs.map((r) => r.req);
           const results = await Promise.all(reqAsyncFns);
           console.info("所有请求的结果:", results);
@@ -527,8 +536,8 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             right: 0;
           }
           .ant-select-selector {
-            border-radius: 21px !important;
-            height: 42px !important;
+            border-radius: 16px !important;
+            height: 32px !important;
             padding: 0 16px !important;
             border: 1px solid #A4CAFE !important;
             background: #EBF5FF !important;
@@ -551,10 +560,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
 
           .ant-select-selection-search-input {
             height: 42px !important;
-          }
-
-          .ant-select .ant-select-arrow{
-            margin-top: 0px;
           }
         `}
         </style>
@@ -777,7 +782,7 @@ window.initSelectionEnd = function initSelectionEnd() {
 
 window.showSearchListPanel = function showSearchListPanel(data) {
   // const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-  const container = document.querySelector("section#univer-container");
+  const container = document.querySelector("section#univer-container").parentElement;
   if (!container) return;
   const mountNode = document.createElement("div");
   mountNode.classList.add("search-wrapper");
@@ -907,7 +912,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210, //  univer-float-dom-wrapper width 208 ai-gpt 206
-      height: 48,
+      height: 38,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1059,6 +1064,7 @@ window.initCellClickEvent = () => {
 };
 
 function onOpen() {
+  initDomLayout();
   setTimeout(() => {
     initData();
     registerLoading();
@@ -1071,20 +1077,20 @@ function onOpen() {
 
     // test
 
-    window.saveSearchResult(
-      { row: 0, col: 0 },
-      {
-        result: "$99.8 billion",
-        sources: [
-          {
-            description:
-              "Apple Inc. Annual Income Statement showing financial data.",
-            title: "AAPL | Apple Inc. Annual Income Statement - WSJ",
-            url: "https://www.wsj.com/market-data/quotes/AAPL/financials/annual/income-statement",
-          },
-        ],
-      }
-    );
+    // window.saveSearchResult(
+    //   { row: 3, col: 3 },
+    //   {
+    //     result: "$99.8 billion",
+    //     sources: [
+    //       {
+    //         description:
+    //           "Apple Inc. Annual Income Statement showing financial data.",
+    //         title: "AAPL | Apple Inc. Annual Income Statement - WSJ",
+    //         url: "https://www.wsj.com/market-data/quotes/AAPL/financials/annual/income-statement",
+    //       },
+    //     ],
+    //   }
+    // );
 
     // window.newLoadingRange();
   }, 1000);
