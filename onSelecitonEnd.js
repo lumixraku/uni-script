@@ -1,9 +1,4 @@
-const aiAgentMapColumn = (window.aiAgentMapColumn = {
-  // 1: "optionGPT",
-  // 2: "optionGPT",
-  // 3: "optionSearch",
-  // 4: "optionSearch",
-});
+const aiAgentMapColumn = window.aiAgentMapColumn = new Map();
 
 window.initData = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
@@ -49,9 +44,9 @@ window.initData = function () {
   for (let i = 2; i < 8; i++) {
     sheet.autoFitRow(i);
   }
-  sheet.setRowHeight(0, 50);
+  sheet.setRowHeight(0, 60);
   univerAPI.customizeColumnHeader({
-    headerStyle: { textAlign: "left", fontSize: 9 },
+    headerStyle: { textAlign: "left", fontSize: 9, size: 46 },
   });
 };
 
@@ -73,7 +68,7 @@ window.getAIPromptByCell = function getAIPromptByCell(cell) {
   }
 
   console.log("prompt cell", cell.row, cell.column);
-  console.log("prompt::: " + prompt + " :::");
+  console.log(window.aiAgentMapColumn[cell.column] + "prompt::: " + prompt + " :::");
   const rs = { prompt, promptWord, valueWord };
   if (!rs.promptWord || !rs.valueWord) {
     rs.missing = true;
@@ -303,7 +298,7 @@ window.registerAIButton = function registerAIButton() {
       const { dispose: loadingDispose } = window.newLoadingRange();
       for (let row = startRow; row <= endRow; row++) {
         for (let column = startColumn; column <= endColumn; column++) {
-          const aiFnName = aiAgentMapColumn[column]; //  optionGPT, optionSearch, optionRead
+          const aiFnName = window.aiAgentMapColumn.get(column); //  optionGPT, optionSearch, optionRead
           const aiFn = aiAgentFnMap[aiFnName] || aiAgentFnMap.optionGPT;
           if (aiFn) {
             const req = aiFn({ row, column });
@@ -420,17 +415,19 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
     const defaultOption = props.data.defaultOption || "optionGPT";
     console.log("default OPT", column, defaultOption);
     const [selectedValue, setSelectedValue] = useState(defaultOption); // 初始默认值
-    window.aiAgentMapColumn[column] = defaultOption;
+    if(!window.aiAgentMapColumn.has(column)){
+      window.aiAgentMapColumn.set(column, defaultOption);
+    }
     const handleChange = (value) => {
-      aiAgentMapColumn[column] = value;
+      window.aiAgentMapColumn.set(column, value);
       setSelectedValue(value);
-      console.log("Selected:", value);
+      console.log("Selected:", value, column, window.aiAgentMapColumn.get(column));
     };
 
-    const handleClick = (value) => {
-      setSelectedValue(value);
-      console.log("Selected:", value);
-    };
+    // const handleClick = (value) => {
+    //   setSelectedValue(value);
+    //   console.log("Selected:", value);
+    // };
 
     const agentDetail = {
       optionGPT: {
@@ -517,6 +514,8 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           .ai-agent-select-wrapper {
             padding-left: 10px;
             padding-right: 10px;
+            position: absolute;
+            right: 0;
           }
           .ant-select-selector {
             border-radius: 21px !important;
@@ -534,7 +533,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
 
           .ant-select-focused .ant-select-selector {
             box-shadow: 0 2px 8px rgba(32,33,36,0.28) !important;
-            border-color: rgba(223,225,229,0) !important;
           }
 
           .ant-select-selection-placeholder,
@@ -672,6 +670,7 @@ window.newSearchListPanel = function newSearchListPanel() {
     );
   };
   return SearchListPanel;
+
   // window.SearchListPanel = SearchListPanel;
   // univerAPI.registerComponent("SearchListPanel", SearchListPanel);
 };
@@ -806,7 +805,7 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 134,
+      width: 210, //  univer-float-dom-wrapper width 208 ai-gpt 206
       height: 48,
       marginX: 0,
       marginY: 0,
@@ -828,8 +827,8 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 134,
-      height: 48,
+      width: 210,
+      height: 48, // #ai-select2 is actually 42 ( there is -2 logic in FloatDom)
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -852,7 +851,7 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 174,
+      width: 210,
       height: 48,
       marginX: 0,
       marginY: 0,
@@ -877,7 +876,7 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 174,
+      width: 210,
       height: 48,
       marginX: 0,
       marginY: 0,
@@ -902,7 +901,7 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 174,
+      width: 210,
       height: 48,
       marginX: 0,
       marginY: 0,
@@ -927,7 +926,7 @@ window.initColumnAgent = function () {
       },
     },
     {
-      width: 174,
+      width: 210,
       height: 48,
       marginX: 0,
       marginY: 0,
