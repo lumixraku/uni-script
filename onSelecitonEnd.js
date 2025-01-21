@@ -1,4 +1,4 @@
-const aiAgentMapColumn = window.aiAgentMapColumn = new Map();
+const aiAgentMapColumn = (window.aiAgentMapColumn = new Map());
 
 window.initData = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
@@ -45,6 +45,10 @@ window.initData = function () {
     sheet.autoFitRow(i);
   }
   sheet.setRowHeight(0, 60);
+
+  for (let i = 1; i < 10; i++) {
+    sheet.setRowHeight(i, 30);
+  }
   univerAPI.customizeColumnHeader({
     headerStyle: { textAlign: "left", fontSize: 9, size: 46 },
   });
@@ -68,7 +72,9 @@ window.getAIPromptByCell = function getAIPromptByCell(cell) {
   }
 
   console.log("prompt cell", cell.row, cell.column);
-  console.log(window.aiAgentMapColumn[cell.column] + "prompt::: " + prompt + " :::");
+  console.log(
+    window.aiAgentMapColumn[cell.column] + "prompt::: " + prompt + " :::"
+  );
   const rs = { prompt, promptWord, valueWord };
   if (!rs.promptWord || !rs.valueWord) {
     rs.missing = true;
@@ -223,17 +229,6 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
 window.registerLoading = function registerLoading() {
   const LoadingIcon = univerAPI.UI.Icon.Loading;
   const RangeLoading = () => {
-    const divStyle = {
-      width: "100%",
-      height: "100%",
-      backgroundColor: "#d2d9f9",
-      border: "1px solid #6678e9",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      textAlign: "center",
-      opacity: 0.8,
-    };
 
     return (
       <div className="loading-wrapper">
@@ -246,8 +241,8 @@ window.registerLoading = function registerLoading() {
             .loading-wrapper {
               top: 0;
               left: 0;
-              width: 100%;
-              height: 100%;
+              width: calc(100% + 4px);
+              height: calc(100% + 4px);
               display: flex;
               justify-content: center;
               align-items: center;
@@ -415,13 +410,18 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
     const defaultOption = props.data.defaultOption || "optionGPT";
     console.log("default OPT", column, defaultOption);
     const [selectedValue, setSelectedValue] = useState(defaultOption); // 初始默认值
-    if(!window.aiAgentMapColumn.has(column)){
+    if (!window.aiAgentMapColumn.has(column)) {
       window.aiAgentMapColumn.set(column, defaultOption);
     }
     const handleChange = (value) => {
       window.aiAgentMapColumn.set(column, value);
       setSelectedValue(value);
-      console.log("Selected:", value, column, window.aiAgentMapColumn.get(column));
+      console.log(
+        "Selected:",
+        value,
+        column,
+        window.aiAgentMapColumn.get(column)
+      );
     };
 
     // const handleClick = (value) => {
@@ -574,7 +574,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
   univerAPI.registerComponent("AIAgentSelect", AIAgentSelect);
 };
 
-window.newSearchListPanel = function newSearchListPanel() {
+window.initSearchListPanel = function initSearchListPanel() {
   const SearchListPanel = (prop) => {
     const onClose = prop.onClose;
     const styles = {
@@ -627,8 +627,8 @@ window.newSearchListPanel = function newSearchListPanel() {
       },
     };
     const data = prop.data; // { result, sources:[]}
-    if(data.sources.length === 0){
-      data.sources = []
+    if (data.sources.length === 0) {
+      data.sources = [];
     }
     return (
       <div style={styles.panel}>
@@ -669,6 +669,8 @@ window.newSearchListPanel = function newSearchListPanel() {
       </div>
     );
   };
+
+  window.SearchListPanel = SearchListPanel;
   return SearchListPanel;
 
   // window.SearchListPanel = SearchListPanel;
@@ -758,6 +760,73 @@ window.showSearchListPanel = function showSearchListPanel(data) {
   const top = 16; // 16px 的偏移量
   const right = window.innerWidth - rect.right + 16; // 16px 的偏移量
 
+  if (!document.getElementById("slide-panel-styles")) {
+    const styleSheet = document.createElement("style");
+    document.head.appendChild(styleSheet);
+    styleSheet.id = "slide-panel-styles";
+    styleSheet.textContent = `
+    .panel {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        width: 400px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+
+    .panel-enter {
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .panel-exit {
+        animation: slideOut 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    .panel-header {
+        background: #3b82f6;
+        padding: 16px;
+        color: white;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .panel-content {
+        padding: 24px;
+    }
+
+    .close-button {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 20px;
+    }
+  `;
+  }
   // 设置挂载节点样式
   mountNode.style.position = "absolute";
   mountNode.style.top = `${top}px`;
@@ -766,19 +835,24 @@ window.showSearchListPanel = function showSearchListPanel(data) {
   mountNode.style.zIndex = "9999"; // 确保在最顶层
 
   container.appendChild(mountNode);
+  const panel = mountNode;
+  panel.className = "panel panel-enter";
 
   const createRoot = univerAPI.UI.ReactDOM.createRoot;
   const root = createRoot(mountNode);
   // 定义关闭函数
   const dispose = () => {
     console.log("dispose search panel");
-    root.unmount();
-    if (mountNode.parentNode) {
-      mountNode.parentNode.removeChild(mountNode);
-    }
+    panel.className = "panel panel-exit";
+    panel.addEventListener("animationend", () => {
+      root.unmount();
+      if (mountNode.parentNode) {
+        mountNode.parentNode.removeChild(mountNode);
+      }
+    });
   };
   window.disposeSearchPanel = dispose;
-  const SearchListPanel = window.newSearchListPanel();
+  const SearchListPanel = window.SearchListPanel;
   // 渲染组件
   console.log("root render");
   root.render(<SearchListPanel onClose={dispose} data={data} />);
@@ -962,20 +1036,23 @@ function onOpen() {
     registerLoading();
     registerAIButton();
     registerAIAgentSelect();
+    initSearchListPanel();
     initSelectionEnd();
     initCellClickEvent();
     initColumnAgent();
 
     // test
 
-    window.saveSearchResult(
-      { row: 0, col: 0 },
-      {
-        result: "$99.8 billion",
-        sources: [
-          "https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/",
-        ],
-      }
-    );
+    // window.saveSearchResult(
+    //   { row: 0, col: 0 },
+    //   {
+    //     result: "$99.8 billion",
+    //     sources: [
+    //       "https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/",
+    //     ],
+    //   }
+    // );
+
+    // window.newLoadingRange();
   }, 1000);
 }
