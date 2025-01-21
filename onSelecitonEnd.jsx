@@ -2,15 +2,55 @@
  * aiAgentMapColumn optionGPT, optionSearch, optionRead
  */
 const aiAgentMapColumn = (window.aiAgentMapColumn = new Map());
+const univerLayoutTime = 500;
 
-window.initDomLayout = function() {
+window.initDomLayout = function () {
+  const domLoading = document.createElement("div");
+  domLoading.id = "dom-loading";
+  domLoading.style.position = "fixed";
+  domLoading.style.top = "0";
+  domLoading.style.left = "0";
+  domLoading.style.width = "100%";
+  domLoading.style.height = "100%";
+  domLoading.style.background = "#fff";
+  domLoading.style.display = "flex";
+  domLoading.style.zIndex = "9999";
+  document.body.appendChild(domLoading);
+
   setTimeout(() => {
-    document.querySelectorAll('header')[0].style.display = 'none';
-    document.querySelectorAll('header')[1].style.display = 'none';
-    document.querySelectorAll('.univer-formula-box')[0].style.display = 'none'
-    document.querySelectorAll('footer').style.display = 'none';
-  }, 0);
-}
+    document.querySelectorAll("header")[0].style.display = "none";
+    document.querySelectorAll("header")[1].style.display = "none";
+    document.querySelectorAll(".univer-formula-box")[0].style.display = "none";
+    document.querySelectorAll("footer")[0].style.display = "none";
+
+    const bg = document.querySelectorAll(
+      ".h-dvh > .flex.size-full.flex-col"
+    )[0];
+    bg.style.background = `linear-gradient(180deg,
+    #00C5A8 0%,
+    #00BBB0 25%,
+    #029DCE 50%,
+    #0C81ED 100%)`;
+
+    const univerContainer = document.querySelector("section#univer-container");
+    univerContainer.style.margin = "10px";
+    univerContainer.style.border = "1px solid #fff";
+    univerContainer.style.borderRadius = "20px";
+    univerContainer.style.overflow = "hidden";
+    univerContainer.style.background = "#fff";
+
+    const corner = document.createElement("div");
+    corner.id = "sheet-corner";
+    corner.style.position = "absolute";
+    corner.style.top = "0";
+    corner.style.left = "0";
+    corner.style.width = "46px";
+    corner.style.height = "36px";
+    corner.style.background = "#f9f9f9";
+    corner.style.zIndex = "9999";
+    univerContainer.appendChild(corner);
+  }, 200);
+};
 
 window.initData = function () {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
@@ -53,22 +93,33 @@ window.initData = function () {
   for (let i = 0; i < 10; i++) {
     sheet.setColumnWidth(i, 210);
   }
-  univerAPI.getActiveWorkbook()
-  .getActiveSheet().getRange("A1:H10").setWrap(true);
-  for (let i = 2; i < 10; i++) {
+  univerAPI
+    .getActiveWorkbook()
+    .getActiveSheet()
+    .getRange("A1:H10")
+    .setWrap(true);
+  for (let i = 0; i < 100; i++) {
     sheet.autoFitRow(i);
-    sheet.setRowHeight(0, 40);
+    sheet.setRowHeight(i, 30);
   }
-  sheet.setRowHeight(0, 60);
+  // sheet.setRowHeight(0, 60);
 
   univerAPI.customizeColumnHeader({
     headerStyle: { textAlign: "left", fontSize: 12, size: 36 },
   });
 
-  univerAPI.getActiveWorkbook()
-  .getActiveSheet().getRange("A1:J1").setBackgroundColor('#5683f3');
-  univerAPI.getActiveWorkbook()
-  .getActiveSheet().getRange("A1:J1").setFontColor('#eeeeee');
+  univerAPI
+    .getActiveWorkbook()
+    .getActiveSheet()
+    .getRange("A1:J1")
+    .setBackgroundColor("#5683f3");
+  univerAPI
+    .getActiveWorkbook()
+    .getActiveSheet()
+    .getRange("A1:J1")
+    .setFontColor("#eeeeee");
+
+  sheet.setFrozenColumns(1);
 };
 
 /**
@@ -245,6 +296,29 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   // },
 });
 
+function initHeader() {
+  function CustomHeader() {
+    return (
+      <div className="custom-header" style={{ height: 72 }}>
+        <div
+          className="custom-header-title"
+          style={{
+            fontSize: 20,
+            position: "relative",
+            top: 20,
+            left: 20,
+            color: '#fff',
+          }}
+        >
+          Univer AI Complete Sheet
+        </div>
+      </div>
+    );
+  }
+
+  univerAPI.registerUIPart("custom-header", CustomHeader);
+}
+
 window.registerLoading = function registerLoading() {
   const LoadingIcon = univerAPI.UI.Icon.Loading;
   const RangeLoading = () => {
@@ -417,8 +491,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
   const GPTIcon = univerAPI.UI.Icon.AiSingle;
 
   const useState = univerAPI.UI.React.useState;
-  // console.log('select', Select);
-  // console.log('Option', Option);
 
   const AIAgentSelect = (props) => {
     console.log("select props", props.data);
@@ -462,6 +534,11 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
         icon: ReadIcon,
         title: "Read",
         desc: "Read documents and extract information.",
+      },
+      optionUserInput: {
+        icon: ReadIcon,
+        title: "User Input",
+        desc: "Put user input in this column",
       },
     };
 
@@ -512,14 +589,29 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             alignItems: "center",
           }}
         >
-          {IconComponent && (
-            <IconComponent
-              style={{
-                fontSize: 20,
-                marginRight: 8,
-              }}
-            />
-          )}
+          <div
+            className="icon-outline"
+            style={{
+              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              background: "#fff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+              boxShadow:
+                "0px 1px 2px -1px rgba(30, 40, 77, 0.10), 0px 1px 3px 0px rgba(30, 40, 77, 0.10)",
+            }}
+          >
+            {IconComponent && (
+              <IconComponent
+                style={{
+                  fontSize: 20,
+                }}
+              />
+            )}
+          </div>
           <span>{title}</span>
         </div>
       );
@@ -538,7 +630,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           .ant-select-selector {
             border-radius: 16px !important;
             height: 32px !important;
-            padding: 0 16px !important;
+            padding: 0 16px 0 4px !important;
             border: 1px solid #A4CAFE !important;
             background: #EBF5FF !important;
             color: #1C64F2 !important;
@@ -556,6 +648,11 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           .ant-select-selection-placeholder,
           .ant-select-selection-item {
             line-height: 42px !important;
+          }
+
+          .ant-select-selection-item {
+            display: flex;
+            align-items: center;
           }
 
           .ant-select-selection-search-input {
@@ -581,6 +678,9 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           <Option value="optionRead" label={getSelectedLabel("optionRead")}>
             {getOptionLabel("optionRead")}
           </Option>
+          {/* <Option value="optionUserInput" label={getSelectedLabel("optionUserInput")}>
+            {getOptionLabel("optionUserInput")}
+          </Option> */}
         </Select>
       </div>
     );
@@ -782,7 +882,9 @@ window.initSelectionEnd = function initSelectionEnd() {
 
 window.showSearchListPanel = function showSearchListPanel(data) {
   // const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
-  const container = document.querySelector("section#univer-container").parentElement;
+  const container = document.querySelector(
+    "section#univer-container"
+  ).parentElement;
   if (!container) return;
   const mountNode = document.createElement("div");
   mountNode.classList.add("search-wrapper");
@@ -1052,7 +1154,7 @@ window.initCellClickEvent = () => {
     const searchResult = window.getSearchResult({ row: endRow, col: endCol });
     console.log("initCellClickEvent", searchResult, endRow, endCol);
     const option = aiAgentMapColumn.get(endCol);
-    if (searchResult && option === 'optionSearch') {
+    if (searchResult && option === "optionSearch") {
       const { id, dispose } = showSearchListPanel(searchResult);
       window.disposeSearchPanel = dispose;
     } else {
@@ -1065,6 +1167,7 @@ window.initCellClickEvent = () => {
 
 function onOpen() {
   initDomLayout();
+  initHeader();
   setTimeout(() => {
     initData();
     registerLoading();
@@ -1074,7 +1177,7 @@ function onOpen() {
     initSelectionEnd();
     initCellClickEvent();
     initColumnAgent();
-
+    document.querySelector("#dom-loading").remove();
     // test
 
     // window.saveSearchResult(
@@ -1093,5 +1196,5 @@ function onOpen() {
     // );
 
     // window.newLoadingRange();
-  }, 1000);
+  }, univerLayoutTime);
 }
