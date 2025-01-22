@@ -115,8 +115,21 @@ window.initData = function () {
     .setFontColor("#eeeeee");
 
   sheet.setFrozenColumns(1);
+  sheet.setFrozenRows(2);
 };
 
+window.getCellText = function(row, col) {
+  const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
+  const r = sheet.getRange(row, col);
+  let text = r.getValue();
+  if(text) return text;
+
+  const richValue = r.getRichTextValue();
+  if(richValue) {
+    return richValue._data.body.dataStream;
+  }
+  return null;
+}
 /**
  * @param {row, column} cell
  */
@@ -126,9 +139,9 @@ window.getAIPromptByCell = function getAIPromptByCell(cell) {
   if (cell.row === 1) {
     return { prompt: "", promptWord: null, valueWord: null, missing: true };
   }
-  const valueWord = sheet.getRange(cell.row, 0).getValueAndRichTextValue();
-  const promptWord = sheet.getRange(0, cell.column).getValueAndRichTextValue();
-  const detailText = sheet.getRange(1, cell.column).getValueAndRichTextValue();
+  const valueWord = getCellText(cell.row, 0);
+  const promptWord = getCellText(0, cell.column);
+  const detailText = getCellText(1, cell.column);
   let prompt = `${promptWord} of ${valueWord}`;
   if (detailText) {
     prompt += ` (${detailText})`;
@@ -255,7 +268,7 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
   optionRead: async (cell) => {
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     let range = sheet.getRange(cell.row, cell.column - 1);
-    const url = range.getValueAndRichTextValue()._data.body.dataStream;
+    const url = getCellText(cell.row, cell.column - 1);
     console.log("optionRead.url:::", url, "!!!"); // a string
     const serverRespStr = await univerAPI.runOnServer(
       "agent",
@@ -885,7 +898,7 @@ window.initSelectionEnd = function initSelectionEnd() {
 
     let hasValue = false;
     for (let i = startRow; i <= endRow; i++) {
-      const cellText = sheet.getRange(i, 0).getValueAndRichTextValue();
+      const cellText = getCellText(i, 0);
       if (cellText) {
         hasValue = true;
       }
@@ -1176,20 +1189,19 @@ window.initColumnAgent = function () {
 };
 
 window.initCellClickEvent = () => {
-  univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p) => {
-    // const { worksheet, workbook, row, column, value, isZenEditor } = params;
-    if (!p.selections[0]) return;
-    const endRow = p.selections[0].endRow;
-    const endCol = p.selections[0].endColumn;
+  univerAPI.addEvent(univerAPI.Event.CellClicked, (params)=> {
+    const { worksheet, workbook, row, column, value, isZenEditor } = params;
+
 
     if (window.disposeSearchPanel) {
       window.disposeSearchPanel();
     }
 
-    const searchResult = window.getSearchResult({ row: endRow, col: endCol });
+    const searchResult = window.getSearchResult({ row, col });
     console.log("initCellClickEvent", searchResult, endRow, endCol);
     const option = aiAgentMapColumn.get(endCol);
     if (searchResult && option === "optionSearch") {
+      console.log('search result', searchResult);
       const { id, dispose } = showSearchListPanel(searchResult);
       window.disposeSearchPanel = dispose;
     } else {
@@ -1198,6 +1210,30 @@ window.initCellClickEvent = () => {
       }
     }
   });
+
+  // univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p) => {
+  //   // const { worksheet, workbook, row, column, value, isZenEditor } = params;
+  //   if (!p.selections[0]) return;
+  //   const endRow = p.selections[0].endRow;
+  //   const endCol = p.selections[0].endColumn;
+
+  //   if (window.disposeSearchPanel) {
+  //     window.disposeSearchPanel();
+  //   }
+
+  //   const searchResult = window.getSearchResult({ row: endRow, col: endCol });
+  //   console.log("initCellClickEvent", searchResult, endRow, endCol);
+  //   const option = aiAgentMapColumn.get(endCol);
+  //   if (searchResult && option === "optionSearch") {
+  //     console.log('search result', searchResult);
+  //     const { id, dispose } = showSearchListPanel(searchResult);
+  //     window.disposeSearchPanel = dispose;
+  //   } else {
+  //     if (window.disposeSearchPanel) {
+  //       window.disposeSearchPanel();
+  //     }
+  //   }
+  // });
 };
 
 function onOpen() {
