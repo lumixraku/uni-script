@@ -3,6 +3,7 @@
  */
 const aiAgentMapColumn = (window.aiAgentMapColumn = new Map());
 const univerLayoutTime = 500;
+const COLUMN_HEADER_HEIGHT = 56;
 
 window.initDomLayout = function () {
   const domLoading = document.createElement("div");
@@ -16,6 +17,71 @@ window.initDomLayout = function () {
   domLoading.style.zIndex = "9999";
   document.body.appendChild(domLoading);
 
+  function initBanner() {
+    function CustomHeader() {
+      return (
+        <div
+          className="custom-header"
+          style={{
+            height: 72,
+            display: "flex",
+            alignItems: "center",
+            paddingLeft: 20,
+          }}
+        >
+          <img
+            alt="logo"
+            loading="lazy"
+            width="106"
+            height="32"
+            decoding="async"
+            className="mr-[44px]"
+            style={{color:'transparent'}}
+            src="https://univer.ai/_next/static/media/logo.cac2ea9f.svg"
+          ></img>
+          <div
+            className="custom-header-title"
+            style={{
+              fontSize: 20,
+              position: "relative",
+              color: "#fff",
+              marginLeft: 20
+            }}
+          >
+            AI Complete Sheet
+          </div>
+        </div>
+      );
+    }
+
+    univerAPI.registerUIPart("custom-header", CustomHeader);
+  }
+
+  initBanner();
+
+  function animationBg(gradientBg) {
+    let position = 0;
+    const speed = 0.5;
+    const interval = 30;
+    let direction = 1;
+
+    function animateGradient() {
+        position += speed * direction;
+
+        if (position > 100) {
+            direction = -1;
+            position = 100;
+        } else if (position < 0) {
+            direction = 1;
+            position = 0;
+        }
+
+        gradientBg.style.backgroundPosition = `0% ${position}%`;
+    }
+
+    setInterval(animateGradient, interval);
+  }
+
   setTimeout(() => {
     document.querySelectorAll("header")[0].style.display = "none";
     document.querySelectorAll("header")[1].style.display = "none";
@@ -25,14 +91,17 @@ window.initDomLayout = function () {
     const bg = document.querySelectorAll(
       ".h-dvh > .flex.size-full.flex-col"
     )[0];
-    bg.style.background = `linear-gradient(180deg, rgb(102 111 135) 0%, rgb(108 108 155) 100%)`;
+    bg.style.background = `linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0.8) 5.89%, rgba(0, 0, 80, 0.6) 18.48%, rgba(0, 0, 100, 0.8) 30.52%, rgba(0, 0, 80, 0.8) 40.83%, rgba(0, 0, 100, 0.8) 46.32%, rgba(0, 0, 80, 0.6) 50.5%, rgba(0, 0, 100, 0.8) 63.06%, rgba(0, 0, 80, 0.8) 73.75%, rgba(0, 0, 0, 0.6) 82.38%, rgba(0, 0, 0, 1) 100%)`;
+    bg.style.backgroundSize = '200% 200%';
+    // bg.style.backgroundPosition = '0% 50%';
+    animationBg(bg);
 
     const univerContainer = document.querySelector("section#univer-container");
     univerContainer.style.margin = "10px";
     univerContainer.style.border = "1px solid #fff";
     univerContainer.style.borderRadius = "20px";
     univerContainer.style.overflow = "hidden";
-    univerContainer.style.background = "#fff";
+    univerContainer.style.background = "#F8FAFD";
 
     const corner = document.createElement("div");
     corner.id = "sheet-corner";
@@ -40,7 +109,7 @@ window.initDomLayout = function () {
     corner.style.top = "0";
     corner.style.left = "0";
     corner.style.width = "46px";
-    corner.style.height = "36px";
+    corner.style.height = `${COLUMN_HEADER_HEIGHT}px`;
     corner.style.background = "#f9f9f9";
     corner.style.zIndex = "9999";
     univerContainer.appendChild(corner);
@@ -97,10 +166,12 @@ window.initData = function () {
     sheet.autoFitRow(i);
     sheet.setRowHeight(i, 30);
   }
-  // sheet.setRowHeight(0, 60);
+
+  sheet.setRowHeight(0, 40);
+  // sheet.getRange('B3:T300').setBackgroundColor('#F8FAFD')
 
   univerAPI.customizeColumnHeader({
-    headerStyle: { textAlign: "left", fontSize: 12, size: 36 },
+    headerStyle: { textAlign: "left", fontSize: 12, size: COLUMN_HEADER_HEIGHT },
   });
 
   univerAPI
@@ -118,7 +189,11 @@ window.initData = function () {
   sheet.setFrozenRows(2);
 };
 
-window.getCellText = function(row, col) {
+window.initAssets = function() {
+
+}
+
+window.getCellText = function getCellText(row, col) {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   const r = sheet.getRange(row, col);
   let text = r.getValue();
@@ -126,7 +201,8 @@ window.getCellText = function(row, col) {
 
   const richValue = r.getRichTextValue();
   if(richValue) {
-    return richValue._data.body.dataStream;
+    const rs = richValue._data.body.dataStream;
+    return rs.replace('\r\n', '');
   }
   return null;
 }
@@ -134,6 +210,7 @@ window.getCellText = function(row, col) {
  * @param {row, column} cell
  */
 window.getAIPromptByCell = function getAIPromptByCell(cell) {
+
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   // row === 1 is description
   if (cell.row === 1) {
@@ -149,7 +226,7 @@ window.getAIPromptByCell = function getAIPromptByCell(cell) {
 
   console.log("prompt cell", cell.row, cell.column);
   console.log(
-    window.aiAgentMapColumn.get(cell.column) + "prompt::: " + prompt + " :::"
+    window.aiAgentMapColumn.get(cell.column) + "prompt~~~ " + prompt + " ~~~"
   );
   const rs = { prompt, promptWord, valueWord };
   if (!rs.promptWord || !rs.valueWord) {
@@ -198,8 +275,8 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     range.setValue(testvalue);
     return { row: cell.row, col: cell.column, result: { result: testvalue } };
   },
-  optionGPT: async (cell) => {
-    const { prompt, missing } = getAIPromptByCell(cell);
+  optionGPT: async (cell, promptObj) => {
+    const { prompt, missing } = promptObj;
     if (missing) {
       // missing means that the promptWord/valueWord is empty
       return { row: cell.row, col: cell.column, missing };
@@ -227,8 +304,8 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     return { row: cell.row, col: cell.column, result: serverResp };
   },
 
-  optionSearch: async (cell) => {
-    const { prompt, missing } = getAIPromptByCell(cell);
+  optionSearch: async (cell, promptObj) => {
+    const { prompt, missing } = promptObj;
     if (missing) {
       // missing means that the promptWord/valueWord is empty
       return { row: cell.row, col: cell.column, missing };
@@ -293,56 +370,9 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     console.log('option read set value', serverResp.result);
     return { row: cell.row, col: cell.column, result: serverResp };
   },
-
-  // optionSearchCallback: async (reqs, results) => {
-  //   if (results.length === 1) {
-  //     const searchResult = results[0];
-  //     if (searchResult) {
-  //       window.showSearchListPanel(searchResult);
-  //     }
-  //   }
-  // },
 });
 
-function initHeader() {
-  function CustomHeader() {
-    return (
-      <div
-        className="custom-header"
-        style={{
-          height: 72,
-          display: "flex",
-          alignItems: "center",
-          paddingLeft: 20,
-        }}
-      >
-        <img
-          alt="logo"
-          loading="lazy"
-          width="106"
-          height="32"
-          decoding="async"
-          class="mr-[44px]"
-          style={{color:'transparent'}}
-          src="https://univer.ai/_next/static/media/logo.cac2ea9f.svg"
-        ></img>
-        <div
-          className="custom-header-title"
-          style={{
-            fontSize: 20,
-            position: "relative",
-            color: "#fff",
-            marginLeft: 20
-          }}
-        >
-          AI Complete Sheet
-        </div>
-      </div>
-    );
-  }
 
-  univerAPI.registerUIPart("custom-header", CustomHeader);
-}
 
 window.registerLoading = function registerLoading() {
   const LoadingIcon = univerAPI.UI.Icon.Loading;
@@ -399,6 +429,8 @@ window.registerLoading = function registerLoading() {
 window.registerAIButton = function registerAIButton() {
   const AIButton = () => {
     const clickHandler = async () => {
+      console.log('AIButton  AIButton  AIButton  AIButton clicked')
+
       const reqs = []; // [{cell, aiFn, aiFnName}]
       const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
       const range = univerAPI
@@ -412,11 +444,11 @@ window.registerAIButton = function registerAIButton() {
           const aiFnName = window.aiAgentMapColumn.get(column); //  optionGPT, optionSearch, optionRead
           const aiFn = aiAgentFnMap[aiFnName] || aiAgentFnMap.optionGPT;
 
-          const { missing } = getAIPromptByCell({ row, column });
-          if (!missing) {
+          const cellPromptObj = getAIPromptByCell({ row, column });
+          if (!cellPromptObj.missing) {
             // missing means that the promptWord/valueWord is empty
             if (aiFn) {
-              const req = aiFn({ row, column });
+              const req = aiFn({ row, column }, cellPromptObj);
               reqs.push({ cell: { row, col: column }, req, aiFnName });
             }
           }
@@ -521,9 +553,21 @@ window.registerAIButton = function registerAIButton() {
 window.registerAIAgentSelect = function registerAIAgentSelect() {
   const Option = univerAPI.UI.Select.Option;
   const Select = univerAPI.UI.Select;
+  const Icon = univerAPI.UI.AntIcon;
   const SearchIcon = univerAPI.UI.Icon.Chrome;
-  const ReadIcon = univerAPI.UI.Icon.WriteSingle;
+  const WriteIcon = univerAPI.UI.Icon.WriteSingle;
   const GPTIcon = univerAPI.UI.Icon.AiSingle;
+
+  const ColorGPTIcon = (props) => (
+    <Icon component={ColorGPTSVG} {...props} />
+  );
+
+  const ColorGoogleIcon = (props) => (
+    <Icon component={ColorGoogleSVG} {...props} />
+  )
+
+  // const createFromIconfontCN = univerAPI.UI.createFromIconfontCN;
+  // createFromIconfontCN.f
 
   const useState = univerAPI.UI.React.useState;
 
@@ -556,22 +600,22 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
 
     const agentDetail = {
       optionGPT: {
-        icon: GPTIcon,
+        icon: ColorGPTIcon,
         title: "GPT",
         desc: "Ask questions directly to the LLM.",
       },
       optionSearch: {
-        icon: SearchIcon,
+        icon: ColorGoogleIcon,
         title: "Web Search",
         desc: "Search the web for information.",
       },
       optionRead: {
-        icon: ReadIcon,
+        icon: ColorGoogleIcon,
         title: "Read",
         desc: "Read documents and extract information.",
       },
       optionUserInput: {
-        icon: ReadIcon,
+        icon: WriteIcon,
         title: "User Input",
         desc: "Put user input in this column",
       },
@@ -651,7 +695,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
         </div>
       );
     };
-
     return (
       <div className="ai-agent-select-wrapper">
         <style>
@@ -661,6 +704,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             padding-right: 10px;
             position: absolute;
             right: 0;
+            top:10px;
           }
           .ant-select-selector {
             border-radius: 16px !important;
@@ -866,7 +910,7 @@ window.newAIButton = function newAIButton() {
 window.newLoadingRange = function newLoadingRange() {
   const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
   const range = univerAPI.getActiveWorkbook().getActiveSheet().getActiveRange();
-  const { id, dispose } = sheet.addFloatDomToRange(
+  let { id, dispose } = sheet.addFloatDomToRange(
     range,
     {
       allowTransform: false,
@@ -878,6 +922,11 @@ window.newLoadingRange = function newLoadingRange() {
     {},
     "RangeLoading" // dom id
   );
+  if(!dispose) {
+    dispose = () => {
+      console.log('no loading dispose');
+    }
+  }
   return {
     id,
     dispose,
@@ -1058,7 +1107,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210, //  univer-float-dom-wrapper width 208 ai-gpt 206
-      height: 38,
+      height: 58,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1080,7 +1129,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210,
-      height: 48, // #ai-select2 is actually 42 ( there is -2 logic in FloatDom)
+      height: 58, // #ai-select2 is actually 42 ( there is -2 logic in FloatDom)
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1104,7 +1153,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210,
-      height: 48,
+      height: 58,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1129,7 +1178,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210,
-      height: 48,
+      height: 58,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1154,7 +1203,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210,
-      height: 48,
+      height: 58,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1179,7 +1228,7 @@ window.initColumnAgent = function () {
     },
     {
       width: 210,
-      height: 48,
+      height: 58,
       marginX: 0,
       marginY: 0,
       horizonOffsetAlign: "right",
@@ -1189,39 +1238,15 @@ window.initColumnAgent = function () {
 };
 
 window.initCellClickEvent = () => {
-  univerAPI.addEvent(univerAPI.Event.CellClicked, (params)=> {
-    const { worksheet, workbook, row, column, value, isZenEditor } = params;
+  // univerAPI.addEvent(univerAPI.Event.CellClicked, (params)=> {
+  //   const { worksheet, workbook, row, column, value, isZenEditor } = params;
 
-
-    if (window.disposeSearchPanel) {
-      window.disposeSearchPanel();
-    }
-
-    const searchResult = window.getSearchResult({ row, col });
-    console.log("initCellClickEvent", searchResult, endRow, endCol);
-    const option = aiAgentMapColumn.get(endCol);
-    if (searchResult && option === "optionSearch") {
-      console.log('search result', searchResult);
-      const { id, dispose } = showSearchListPanel(searchResult);
-      window.disposeSearchPanel = dispose;
-    } else {
-      if (window.disposeSearchPanel) {
-        window.disposeSearchPanel();
-      }
-    }
-  });
-
-  // univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p) => {
-  //   // const { worksheet, workbook, row, column, value, isZenEditor } = params;
-  //   if (!p.selections[0]) return;
-  //   const endRow = p.selections[0].endRow;
-  //   const endCol = p.selections[0].endColumn;
 
   //   if (window.disposeSearchPanel) {
   //     window.disposeSearchPanel();
   //   }
 
-  //   const searchResult = window.getSearchResult({ row: endRow, col: endCol });
+  //   const searchResult = window.getSearchResult({ row, col });
   //   console.log("initCellClickEvent", searchResult, endRow, endCol);
   //   const option = aiAgentMapColumn.get(endCol);
   //   if (searchResult && option === "optionSearch") {
@@ -1234,11 +1259,35 @@ window.initCellClickEvent = () => {
   //     }
   //   }
   // });
+
+  univerAPI.addEvent(univerAPI.Event.SelectionMoveEnd, (p) => {
+    // const { worksheet, workbook, row, column, value, isZenEditor } = params;
+    if (!p.selections[0]) return;
+    const endRow = p.selections[0].endRow;
+    const endCol = p.selections[0].endColumn;
+
+    if (window.disposeSearchPanel) {
+      window.disposeSearchPanel();
+    }
+
+    const searchResult = window.getSearchResult({ row: endRow, col: endCol });
+    console.log("initCellClickEvent", searchResult, endRow, endCol);
+    const option = aiAgentMapColumn.get(endCol);
+    if (searchResult && option === "optionSearch") {
+      console.log('search result', searchResult);
+      const { id, dispose } = showSearchListPanel(searchResult);
+      window.disposeSearchPanel = dispose;
+    } else {
+      if (window.disposeSearchPanel) {
+        window.disposeSearchPanel();
+      }
+    }
+  });
 };
 
 function onOpen() {
   initDomLayout();
-  initHeader();
+
   setTimeout(() => {
     initData();
     registerLoading();
