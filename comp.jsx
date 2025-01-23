@@ -53,7 +53,7 @@ window.registerLoading = function registerLoading() {
 window.registerAIButton = function registerAIButton() {
   const AIButton = () => {
     const clickHandler = async () => {
-      console.log('AIButton  AIButton  AIButton  AIButton clicked')
+      console.log("AIButton  AIButton  AIButton  AIButton clicked");
 
       const reqs = []; // [{cell, aiFn, aiFnName}]
       const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
@@ -96,7 +96,7 @@ window.registerAIButton = function registerAIButton() {
             const req = reqs[0];
             if (req.aiFnName === "optionSearch") {
               if (results[0]) {
-                console.log('search_list', results[0]);
+                console.log("search_list", results[0]);
                 // results[0].result ---> { result: '{..}', sources: [{...}]}
                 window.showSearchListPanel(results[0].result);
               }
@@ -127,7 +127,7 @@ window.registerAIButton = function registerAIButton() {
           position: "relative",
           overflow: "hidden",
           backgroundColor: "#4e67eb",
-          marginTop: '5px',
+          marginTop: "5px",
         }}
         onClick={clickHandler}
       >
@@ -181,7 +181,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
   const SearchIcon = univerAPI.UI.Icon.Chrome;
   const WriteIcon = univerAPI.UI.Icon.WriteSingle;
   const GPTIcon = univerAPI.UI.Icon.AiSingle;
-
 
   const useState = univerAPI.UI.React.useState;
 
@@ -246,15 +245,15 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
       optionUniver: {
         icon: ColorUniverIcon,
         title: "Save as Univer",
-        desc: "Save the result as a child worksheet."
+        desc: "Save the result as a child worksheet.",
       },
       optionPDF: {
-        icon:ColorSlideIcon,
+        icon: ColorSlideIcon,
         title: "PDF",
         desc: "Answer questions based on the PDF content.",
       },
       optionApify: {
-        icon:ColorApifyIcon,
+        icon: ColorApifyIcon,
         title: "Apify",
         desc: "Extract web content with Apify.",
       },
@@ -272,7 +271,6 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
 
     // 最简单的自定义 dropdownRender
     const dropdownRender = (menu) => {
-
       return (
         <div onWheel={(e) => e.stopPropagation()}>
           <div style={{ padding: "8px", borderBottom: "0px solid #ccc" }}></div>
@@ -293,6 +291,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             padding: "8px",
           }}
         >
+          {console.log('Icon comp', IconComponent)}
           {IconComponent && (
             <IconComponent
               style={{
@@ -302,7 +301,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             />
           )}
           <div>
-            <div style={{ color: '#0E111E', fontWeight: "bold" }}>{title}</div>
+            <div style={{ color: "#0E111E", fontWeight: "bold" }}>{title}</div>
             <div style={{ color: "gray", fontSize: "12px" }}>{desc}</div>
           </div>
         </div>
@@ -386,7 +385,7 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           listHeight={500} // 设置下拉列表的高度，默认是256
           value={selectedValue}
           style={{ width: selectWidth || 120 }}
-          dropdownStyle={{ width: 400  }} // 下拉菜单的宽度
+          dropdownStyle={{ width: 400 }} // 下拉菜单的宽度
           dropdownRender={dropdownRender}
           onChange={handleChange}
           onSelect={handleChange}
@@ -401,25 +400,31 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           <Option value="optionRead" label={getSelectedLabel("optionRead")}>
             {getOptionLabel("optionRead")}
           </Option>
-          <Option value="optionCoze" label={getSelectedLabel("optionCoze")} disabled>
+          <Option value="optionCoze" label={getSelectedLabel("optionCoze")}>
             {getOptionLabel("optionCoze")}
           </Option>
-          <Option value="optionDatabase" label={getSelectedLabel("optionDatabase")} disabled>
+          <Option
+            value="optionDatabase"
+            label={getSelectedLabel("optionDatabase")}
+          >
             {getOptionLabel("optionDatabase")}
           </Option>
-          <Option value="optionFinance" label={getSelectedLabel("optionFinance")} disabled>
-          {getOptionLabel("optionFinance")}
+          <Option
+            value="optionFinance"
+            label={getSelectedLabel("optionFinance")}
+          >
+            {getOptionLabel("optionFinance")}
           </Option>
-          <Option value="optionUniver" label={getSelectedLabel("optionUniver")} disabled>
+          <Option value="optionUniver" label={getSelectedLabel("optionUniver")}>
             {getOptionLabel("optionUniver")}
           </Option>
-          <Option value="optionPDF" label={getSelectedLabel("optionPDF")} disabled>
+          <Option value="optionPDF" label={getSelectedLabel("optionPDF")}>
             {getOptionLabel("optionPDF")}
           </Option>
-          <Option value="optionApify" label={getSelectedLabel("optionApify")} disabled>
+          <Option value="optionApify" label={getSelectedLabel("optionApify")}>
             {getOptionLabel("optionApify")}
           </Option>
-          <Option value="optionImage" label={getSelectedLabel("optionImage")} disabled>
+          <Option value="optionImage" label={getSelectedLabel("optionImage")}>
             {getOptionLabel("optionImage")}
           </Option>
         </Select>
@@ -538,16 +543,11 @@ window.initSearchListPanel = function initSearchListPanel() {
   // univerAPI.registerComponent("SearchListPanel", SearchListPanel);
 };
 
-
 window.initComp = function initIconComp() {
   const Icon = univerAPI.UI.AntIcon;
-  const ColorGPTIcon = (props) => (
-    <Icon component={ColorGPTSVG} {...props} />
-  );
+  const ColorGPTIcon = (props) => <Icon component={ColorGPTSVG} {...props} />;
 
-  const ColorCozeIcon = (props) => (
-    <Icon component={ColorCozeSVG} {...props} />
-  )
+  const ColorCozeIcon = (props) => <Icon component={ColorCozeSVG} {...props} />;
 
   const ColorGoogleIcon = (props) => (
     <Icon component={ColorGoogleSVG} {...props} />
@@ -555,27 +555,29 @@ window.initComp = function initIconComp() {
 
   const ColorApifyIcon = (props) => (
     <Icon component={ColorApifySVG} {...props} />
-  )
+  );
 
-  const ColorDatabaseIcon = (props) => (
+  const ColorDatabaseIcon = (props) => {
+  console.log('database prop', props);
+  return (
     <Icon component={ColorDatabaseSVG} {...props} />
-  )
+  )};
 
   const ColorGraphBarIcon = (props) => (
     <Icon component={ColorGraphBarSVG} {...props} />
-  )
+  );
 
   const ColorImageIcon = (props) => (
     <Icon component={ColorImageSVG} {...props} />
-  )
+  );
 
   const ColorSlideIcon = (props) => (
     <Icon component={ColorSlideSVG} {...props} />
-  )
+  );
 
   const ColorUniverIcon = (props) => (
     <Icon component={ColorUniverSVG} {...props} />
-  )
+  );
 
   window.ColorGPTIcon = ColorGPTIcon;
   window.ColorGoogleIcon = ColorGoogleIcon;
@@ -591,4 +593,4 @@ window.initComp = function initIconComp() {
   registerAIButton();
   registerAIAgentSelect();
   initSearchListPanel();
-}
+};

@@ -55,7 +55,7 @@ window.initDomLayout = function () {
               marginLeft: 20
             }}
           >
-            AI Complete Sheet
+            AI Enrichment
           </div>
         </div>
       );
