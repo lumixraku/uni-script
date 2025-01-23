@@ -1,5 +1,3 @@
-
-
 window.registerLoading = function registerLoading() {
   const LoadingIcon = univerAPI.UI.Icon.Loading;
   const RangeLoading = () => {

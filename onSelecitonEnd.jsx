@@ -194,6 +194,16 @@ window.initData = function () {
 
   sheet.setFrozenColumns(1);
   sheet.setFrozenRows(2);
+
+  univerAPI.getActiveWorkbook()
+       .getActiveSheet()
+       .getRange('A1:A999')
+       .setHorizontalAlignment('center');
+
+       univerAPI.getActiveWorkbook()
+       .getActiveSheet()
+       .getRange('A1:T1')
+       .setHorizontalAlignment('center');
 };
 
 window.initAssets = function() {
