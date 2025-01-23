@@ -170,7 +170,6 @@ window.initData = function () {
     .getRange("A1:H10")
     .setWrap(true);
   for (let i = 0; i < 100; i++) {
-    sheet.autoFitRow(i);
     sheet.setRowHeight(i, 30);
   }
 
@@ -307,7 +306,9 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
-    sheet.autoFitRow(cell.row);
+    setTimeout(() => {
+      sheet.autoFitRow(cell.row)
+    }, 0);
 
     return { row: cell.row, col: cell.column, result: serverResp };
   },
@@ -344,7 +345,9 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     const sheet = univerAPI.getActiveWorkbook().getActiveSheet();
     const range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
-    sheet.autoFitRow(cell.row);
+    setTimeout(() => {
+      sheet.autoFitRow(cell.row)
+    }, 0);
     // {"result":"$99.8 billion","sources":["https://www.visualcapitalist.com/cp/charting-apples-profit-100-billion-2022/"]}
     window.saveSearchResult({ row: cell.row, col: cell.column }, serverResp);
     return { row: cell.row, col: cell.column, result: serverResp };
@@ -375,6 +378,9 @@ const aiAgentFnMap = (window.aiAgentFnMap = {
     }
     range = sheet.getRange(cell.row, cell.column);
     range.setValue(serverResp.result);
+    setTimeout(() => {
+      sheet.autoFitRow(cell.row)
+    }, 0);
     console.log('option read set value', serverResp.result);
     return { row: cell.row, col: cell.column, result: serverResp };
   },
