@@ -379,6 +379,10 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
             box-shadow: 0 2px 8px rgba(32,33,36,0.28) !important;
           }
 
+          .ant-select-item-option-disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
         `}
         </style>
         <Select
@@ -400,31 +404,33 @@ window.registerAIAgentSelect = function registerAIAgentSelect() {
           <Option value="optionRead" label={getSelectedLabel("optionRead")}>
             {getOptionLabel("optionRead")}
           </Option>
-          <Option value="optionCoze" label={getSelectedLabel("optionCoze")}>
+          <Option value="optionCoze" label={getSelectedLabel("optionCoze")} disabled>
             {getOptionLabel("optionCoze")}
           </Option>
           <Option
             value="optionDatabase"
             label={getSelectedLabel("optionDatabase")}
+            disabled
           >
             {getOptionLabel("optionDatabase")}
           </Option>
           <Option
             value="optionFinance"
             label={getSelectedLabel("optionFinance")}
+            disabled
           >
             {getOptionLabel("optionFinance")}
           </Option>
-          <Option value="optionUniver" label={getSelectedLabel("optionUniver")}>
+          <Option value="optionUniver" label={getSelectedLabel("optionUniver")} disabled>
             {getOptionLabel("optionUniver")}
           </Option>
-          <Option value="optionPDF" label={getSelectedLabel("optionPDF")}>
+          <Option value="optionPDF" label={getSelectedLabel("optionPDF")} disabled>
             {getOptionLabel("optionPDF")}
           </Option>
-          <Option value="optionApify" label={getSelectedLabel("optionApify")}>
+          <Option value="optionApify" label={getSelectedLabel("optionApify")} disabled>
             {getOptionLabel("optionApify")}
           </Option>
-          <Option value="optionImage" label={getSelectedLabel("optionImage")}>
+          <Option value="optionImage" label={getSelectedLabel("optionImage")} disabled>
             {getOptionLabel("optionImage")}
           </Option>
         </Select>
